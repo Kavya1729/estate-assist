@@ -1,6 +1,6 @@
+import { HttpError } from '../lib/httpError.js';
 import { User } from '../models/index.js';
 import { verifyToken } from '../services/authService.js';
-import { HttpError } from './errors.js';
 
 /**
  * Requires a valid `Authorization: Bearer <token>` header and loads the staff

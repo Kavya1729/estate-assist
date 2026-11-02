@@ -1,10 +1,4 @@
-export class HttpError extends Error {
-  constructor(status, message, details) {
-    super(message);
-    this.status = status;
-    this.details = details;
-  }
-}
+import { HttpError } from '../lib/httpError.js';
 
 export function notFound(req, _res, next) {
   next(new HttpError(404, `Route not found: ${req.method} ${req.originalUrl}`));

@@ -21,4 +21,25 @@ estate-assist/
   docs/     Technical design document and deployment notes
 ```
 
+Inside `server/`, a request flows route, then middleware, then service, then model:
+
+```
+server/
+  src/
+    config/       environment and database connection
+    constants/    domain values shared across layers (roles, sources, statuses)
+    lib/          small pure helpers (phone normalisation, HttpError)
+    middleware/   auth, role guard, validation, rate limiting, error handling
+    models/       Mongoose schemas and indexes
+    routes/       HTTP endpoints, thin: validate, call a service, respond
+    services/     business logic
+    validators/   zod request schemas
+    app.js        Express app factory (used by tests)
+    server.js     process entry: connect, listen, shut down
+  test/
+    unit/         pure functions
+    integration/  HTTP and database behaviour against in-memory MongoDB
+    helpers/      test database and factories
+```
+
 Setup and deployment steps live in `docs/deployment.md`.

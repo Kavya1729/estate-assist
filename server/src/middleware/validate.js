@@ -1,4 +1,4 @@
-import { HttpError } from './errors.js';
+import { HttpError } from '../lib/httpError.js';
 
 /**
  * Validates `body`, `query` and `params` against zod schemas before the handler

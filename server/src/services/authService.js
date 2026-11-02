@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 import { env } from '../config/env.js';
-import { HttpError } from '../middleware/errors.js';
+import { HttpError } from '../lib/httpError.js';
 import { User } from '../models/index.js';
 
 const JWT_ALGORITHM = 'HS256';
