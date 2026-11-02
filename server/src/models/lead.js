@@ -99,7 +99,7 @@ leadSchema.index({ primarySource: 1, createdAt: -1 });
 leadSchema.index({ temperature: 1, updatedAt: -1 });
 leadSchema.index({ 'possibleDuplicates.resolution': 1 });
 
-leadSchema.pre('validate', async function prepare() {
+leadSchema.pre('validate', function prepare() {
   if (this.isModified('phone')) {
     this.normalizedPhone = this.phone ? normalizeIndianMobile(this.phone) : undefined;
     if (this.phone && !this.normalizedPhone) {
@@ -111,7 +111,10 @@ leadSchema.pre('validate', async function prepare() {
   if (budgetMin != null && budgetMax != null && budgetMax < budgetMin) {
     this.invalidate('profile.budgetMax', 'budgetMax must be greater than or equal to budgetMin');
   }
+});
 
+/** Runs after validation, so rejected leads never consume a code. */
+leadSchema.pre('save', async function assignCode() {
   if (this.isNew && !this.code) {
     this.code = `LD-${await nextSequence('lead', { start: LEAD_CODE_START })}`;
   }

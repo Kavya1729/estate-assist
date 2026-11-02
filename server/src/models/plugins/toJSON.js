@@ -11,7 +11,7 @@ export function toJSON(schema) {
     virtuals: true,
     versionKey: false,
     transform(_doc, ret) {
-      ret.id = ret._id?.toString();
+      if (ret._id != null) ret.id = ret._id.toString();
       delete ret._id;
       for (const path of privatePaths) delete ret[path];
       return ret;

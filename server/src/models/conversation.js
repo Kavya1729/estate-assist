@@ -28,6 +28,8 @@ const messageSchema = new mongoose.Schema(
   { _id: true },
 );
 
+messageSchema.plugin(toJSON);
+
 const conversationSchema = new mongoose.Schema(
   {
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', required: true },
