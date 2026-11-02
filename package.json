@@ -5,7 +5,8 @@
   "type": "module",
   "description": "AI lead-response and site-visit booking assistant for a residential developer",
   "workspaces": [
-    "server"
+    "server",
+    "client"
   ],
   "scripts": {
     "dev:server": "npm run dev --workspace server",
