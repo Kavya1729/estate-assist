@@ -2,7 +2,7 @@
 
 ## Run locally
 
-Requirements: Node.js 20.19+ (22 LTS recommended) and npm 10+.
+Requirements: Node.js 20.19+ (22 LTS recommended), npm 10+, and MongoDB (local install or an Atlas cluster).
 
 1. Install dependencies from the repository root:
 
@@ -16,7 +16,10 @@ Requirements: Node.js 20.19+ (22 LTS recommended) and npm 10+.
    cp server/.env.example server/.env
    ```
 
-   `JWT_SECRET` must be at least 32 characters. With `LLM_PROVIDER=mock` the assistant runs without an API key.
+   - `JWT_SECRET` must be at least 32 characters. Generate one with
+     `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
+   - Leave `MONGODB_URI` empty to use a local MongoDB at `mongodb://127.0.0.1:27017/estate-assist`.
+   - With `LLM_PROVIDER=mock` the assistant runs without an API key.
 
 3. Start the API and the web app together:
 
@@ -25,9 +28,25 @@ Requirements: Node.js 20.19+ (22 LTS recommended) and npm 10+.
    ```
 
    - Web app: http://localhost:5173
-   - API: http://localhost:4000/api/health
+   - API health: http://localhost:4000/api/health (returns `database: "up"` when MongoDB is reachable)
 
-   The web app proxies `/api` to the API in development.
+   The web app proxies `/api` to the API in development, so `client/.env.local` is not needed locally.
+
+## External services
+
+### MongoDB Atlas
+
+1. Create a free M0 cluster at https://cloud.mongodb.com.
+2. Database Access: add a database user with a generated password.
+3. Network Access: allow the API host. For local testing add your current IP.
+4. Connect, Drivers: copy the `mongodb+srv://` connection string, insert the password and add the
+   database name `estate-assist` before the `?`.
+5. Put it in `MONGODB_URI`. Atlas clusters are replica sets, which the booking transactions need.
+
+### Groq
+
+1. Create an API key at https://console.groq.com/keys.
+2. Set `LLM_PROVIDER=groq` and `GROQ_API_KEY`. `GROQ_MODEL` defaults to `llama-3.3-70b-versatile`.
 
 ## Useful scripts
 
@@ -41,3 +60,5 @@ Requirements: Node.js 20.19+ (22 LTS recommended) and npm 10+.
 ## Environment variables (names only)
 
 Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `CLIENT_ORIGIN`, `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`.
+
+Client (`client/.env.local`, only when the API is on another origin): `VITE_API_URL`.
