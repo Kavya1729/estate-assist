@@ -10,6 +10,10 @@ const schema = z
     PORT: z.coerce.number().int().positive().default(4000),
     MONGODB_URI: z.string().url().default('mongodb://127.0.0.1:27017/estate-assist'),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+    JWT_EXPIRES_IN: z
+      .string()
+      .regex(/^\d+[smhd]$/, 'Use a duration like 12h or 7d')
+      .default('12h'),
     CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
     LLM_PROVIDER: z.enum(['groq', 'mock']).default('mock'),
     GROQ_API_KEY: z.string().optional(),

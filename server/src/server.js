@@ -9,7 +9,10 @@ try {
   process.exit(1);
 }
 
-const app = createApp({ clientOrigin: env.CLIENT_ORIGIN });
+const app = createApp({
+  clientOrigin: env.CLIENT_ORIGIN,
+  trustProxy: env.NODE_ENV === 'production',
+});
 
 const server = app.listen(env.PORT, () => {
   console.log(`API listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
