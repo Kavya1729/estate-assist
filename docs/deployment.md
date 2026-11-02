@@ -50,15 +50,19 @@ Requirements: Node.js 20.19+ (22 LTS recommended), npm 10+, and MongoDB (local i
 
 ## Useful scripts
 
-| Script           | What it does                            |
-| ---------------- | --------------------------------------- |
-| `npm run dev`    | API and web app with live reload        |
-| `npm run lint`   | ESLint across server and client         |
-| `npm run format` | Prettier write                          |
-| `npm run check`  | Lint, format check and production build |
+| Script           | What it does                                   |
+| ---------------- | ---------------------------------------------- |
+| `npm run dev`    | API and web app with live reload               |
+| `npm test`       | API tests against an in-memory MongoDB         |
+| `npm run lint`   | ESLint across server and client                |
+| `npm run format` | Prettier write                                 |
+| `npm run check`  | Lint, format check, tests and production build |
+
+Tests never touch the configured database. They start a throwaway in-memory MongoDB replica set; the
+first run downloads the MongoDB binary (about 100 MB) and caches it.
 
 ## Environment variables (names only)
 
-Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `CLIENT_ORIGIN`, `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`.
+Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN`, `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`.
 
 Client (`client/.env.local`, only when the API is on another origin): `VITE_API_URL`.
