@@ -1,0 +1,22 @@
+{
+  "name": "estate-assist",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI lead-response and site-visit booking assistant for a residential developer",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10"
+  }
+}
