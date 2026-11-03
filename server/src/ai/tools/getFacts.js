@@ -4,7 +4,8 @@ import { formatRupeeRange } from '../../lib/money.js';
 import { IST_TIME_ZONE } from '../../lib/time.js';
 import { Lead, Project } from '../../models/index.js';
 
-function describeProject(project) {
+/** The fact sheet as the model sees it; also the reference for the reply number check. */
+export function describeProject(project) {
   return {
     code: project.code,
     name: project.name,

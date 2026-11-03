@@ -24,6 +24,7 @@ function storable(result) {
  * Returns `forcedHandoff` instead of a reply when the turn has to end without
  * the model: it exceeded the tool budget (`tool_limit`), or the provider or a
  * tool failed (`assistant_error`). The caller decides what to tell the buyer.
+ * `transcript` is everything the model saw, for the post-check on its reply.
  *
  * @param {object} turn
  * @param {import('./providers/llmProvider.js').LLMProvider} turn.provider
@@ -35,7 +36,7 @@ export async function runAgentTurn({ provider, messages, context, logger = conso
   const toolCalls = [];
   let handedOff = false;
 
-  const end = (outcome) => ({ ...outcome, toolCalls });
+  const end = (outcome) => ({ ...outcome, toolCalls, transcript });
 
   for (;;) {
     let completion;

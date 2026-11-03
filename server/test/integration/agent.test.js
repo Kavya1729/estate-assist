@@ -139,9 +139,9 @@ describe('agent turn', () => {
   });
 
   it('hands off when the model asks for a person', async () => {
-    const { reply, mode } = await chat('Can someone call me?', [
+    const { reply, mode } = await chat('Which banks give home loans for this project?', [
       call('handoff_to_human', {
-        reason: 'buyer_requested',
+        reason: 'missing_fact',
         summary: { needs: '3 BHK in Project 1', questions: ['Loan options'] },
       }),
       (messages) => say(`${lastToolResult(messages).executive} will call you shortly.`),
@@ -150,8 +150,9 @@ describe('agent turn', () => {
     expect(mode).toBe('human');
     expect(reply.text).toBe('Ravi Mehta will call you shortly.');
     const stored = await Lead.findById(lead._id);
-    expect(stored.handoff.reason).toBe('buyer_requested');
+    expect(stored.handoff.reason).toBe('missing_fact');
     expect(stored.handoff.summary.questions).toEqual(['Loan options']);
+    expect(stored.handoff.summary.source).toBe('assistant');
     expect(await Outbox.countDocuments({ template: 'handoff_notice' })).toBe(1);
   });
 });
@@ -161,12 +162,12 @@ describe('after a handoff', () => {
     const slot = await createSlot(project);
     let refusal;
 
-    await chat('I want to negotiate, also book Saturday', [
-      call('handoff_to_human', { reason: 'price_or_discount', summary: { needs: 'Negotiation' } }),
+    await chat('Is the loan approval done by you? Also book Saturday', [
+      call('handoff_to_human', { reason: 'missing_fact', summary: { needs: 'Loan approval' } }),
       call('book_visit', { slotId: slot.id }),
       (messages) => {
         refusal = lastToolResult(messages);
-        return say('Ravi will call you about the price and the visit.');
+        return say('Ravi will call you about the loan and the visit.');
       },
     ]);
 
@@ -216,7 +217,7 @@ describe('limits and fallbacks', () => {
 
     const result = await handleBuyerMessage({ leadId: lead._id, text: 'Hello?', provider });
 
-    expect(result).toEqual({ mode: 'human', reply: null });
+    expect(result).toMatchObject({ mode: 'human', reply: null });
     expect(provider.calls).toHaveLength(0);
     const conversation = await Conversation.findOne({ lead: lead._id });
     expect(conversation.messages.at(-1)).toMatchObject({ role: 'buyer', text: 'Hello?' });

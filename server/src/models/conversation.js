@@ -23,6 +23,8 @@ const messageSchema = new mongoose.Schema(
     toolCalls: { type: [toolCallSchema], default: undefined },
     flagged: { type: Boolean, default: false },
     flagReason: { type: String, maxlength: 200 },
+    /** The model's original reply when a guardrail replaced it; shown to reviewers only. */
+    blockedText: { type: String, maxlength: 4000 },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: true },

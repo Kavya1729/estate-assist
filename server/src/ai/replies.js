@@ -1,12 +1,27 @@
-/** Fixed replies used when the model is not in control of the turn. */
+/** Fixed replies used when the model is not in control of the turn, in en / hi / gu. */
 
 const HANDOFF_REPLIES = {
-  en: (name) =>
-    `Let me connect you with ${name ?? 'our sales team'}, who will call you shortly and help with everything.`,
-  hi: (name) =>
-    `मैं आपको ${name ?? 'हमारी सेल्स टीम'} से जोड़ रहा हूँ, वे जल्द ही आपको कॉल करके पूरी मदद करेंगे।`,
-  gu: (name) =>
-    `હું તમને ${name ?? 'અમારી સેલ્સ ટીમ'} સાથે જોડું છું, તેઓ ટૂંક સમયમાં તમને કોલ કરીને પૂરી મદદ કરશે.`,
+  price_or_discount: {
+    en: (name) =>
+      `Pricing and offers are best discussed with ${name ?? 'our sales team'}, who will call you shortly with the details.`,
+    hi: (name) =>
+      `कीमत और ऑफ़र के बारे में ${name ?? 'हमारी सेल्स टीम'} आपसे बात करेंगे, वे जल्द ही आपको कॉल करेंगे।`,
+    gu: (name) =>
+      `કિંમત અને ઓફર વિશે ${name ?? 'અમારી સેલ્સ ટીમ'} તમારી સાથે વાત કરશે, તેઓ ટૂંક સમયમાં તમને કોલ કરશે.`,
+  },
+  buyer_requested: {
+    en: (name) => `Sure. ${name ?? 'Our sales team'} will call you shortly.`,
+    hi: (name) => `ज़रूर। ${name ?? 'हमारी सेल्स टीम'} जल्द ही आपको कॉल करेंगे।`,
+    gu: (name) => `ચોક્કસ. ${name ?? 'અમારી સેલ્સ ટીમ'} ટૂંક સમયમાં તમને કોલ કરશે.`,
+  },
+  default: {
+    en: (name) =>
+      `Let me connect you with ${name ?? 'our sales team'}, who will call you shortly and help with everything.`,
+    hi: (name) =>
+      `मैं आपको ${name ?? 'हमारी सेल्स टीम'} से जोड़ रहा हूँ, वे जल्द ही आपको कॉल करके पूरी मदद करेंगे।`,
+    gu: (name) =>
+      `હું તમને ${name ?? 'અમારી સેલ્સ ટીમ'} સાથે જોડું છું, તેઓ ટૂંક સમયમાં તમને કોલ કરીને પૂરી મદદ કરશે.`,
+  },
 };
 
 const GREETINGS = {
@@ -18,10 +33,41 @@ const GREETINGS = {
     `નમસ્તે${name ? ` ${name}` : ''}! હું અમારા પ્રોજેક્ટ્સ વિશે માહિતી આપી શકું છું અને સાઇટ વિઝિટ બુક કરી શકું છું. તમે શું શોધી રહ્યા છો?`,
 };
 
-export function handoffReply(language, executiveName) {
-  return (HANDOFF_REPLIES[language] ?? HANDOFF_REPLIES.en)(executiveName);
+const FIXED = {
+  /** Replaces a reply that failed the number check. */
+  unverified: {
+    en: 'I want to be sure I give you accurate details, so our sales executive will confirm this for you. Is there anything else I can help with?',
+    hi: 'मैं आपको बिल्कुल सही जानकारी देना चाहता हूँ, इसलिए हमारे सेल्स एग्ज़िक्यूटिव इसकी पुष्टि करेंगे। क्या मैं और किसी चीज़ में मदद कर सकता हूँ?',
+    gu: 'હું તમને એકદમ સાચી માહિતી આપવા માંગું છું, તેથી અમારા સેલ્સ એક્ઝિક્યુટિવ આની પુષ્ટિ કરશે. શું હું બીજી કોઈ મદદ કરી શકું?',
+  },
+  optedOut: {
+    en: 'You will not receive any more messages from us. Reply START if you would like to chat again.',
+    hi: 'अब आपको हमारी ओर से कोई संदेश नहीं मिलेगा। फिर से बात करने के लिए START लिखें।',
+    gu: 'હવે તમને અમારા તરફથી કોઈ સંદેશ નહીં મળે. ફરી વાત કરવા માટે START લખો.',
+  },
+  stillOptedOut: {
+    en: 'You have opted out of messages from us. Reply START if you would like to chat again.',
+    hi: 'आपने हमारे संदेश बंद किए हुए हैं। फिर से बात करने के लिए START लिखें।',
+    gu: 'તમે અમારા સંદેશા બંધ કરેલા છે. ફરી વાત કરવા માટે START લખો.',
+  },
+  optedIn: {
+    en: 'Welcome back! How can I help you today?',
+    hi: 'फिर से स्वागत है! मैं आपकी क्या मदद कर सकता हूँ?',
+    gu: 'ફરી સ્વાગત છે! હું તમારી શું મદદ કરી શકું?',
+  },
+};
+
+const pick = (byLanguage, language) => byLanguage[language] ?? byLanguage.en;
+
+export function handoffReply(language, executiveName, reason) {
+  return pick(HANDOFF_REPLIES[reason] ?? HANDOFF_REPLIES.default, language)(executiveName);
 }
 
 export function greeting(language, name) {
-  return (GREETINGS[language] ?? GREETINGS.en)(name);
+  return pick(GREETINGS, language)(name);
+}
+
+/** @param {'unverified' | 'optedOut' | 'stillOptedOut' | 'optedIn'} kind */
+export function fixedReply(kind, language) {
+  return pick(FIXED[kind], language);
 }
