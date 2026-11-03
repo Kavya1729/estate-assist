@@ -88,13 +88,11 @@ function createSlotBook(projects, today) {
      * days that `accept` allows (past visits must stay in the past).
      */
     reserve(project, startsAt, { holdsSeat = true, accept = () => true } = {}) {
-      const candidates = [ensure(project, startsAt)];
-      for (let day = 0; day < 5; day += 1) {
-        for (const time of DEFAULT_VISIT_TIMES) {
-          const at = istDateTime(addDays(istDateOf(startsAt), day), time);
-          if (at > startsAt) candidates.push(ensure(project, at));
-        }
-      }
+      const latest = startsAt.getTime() + 5 * DAY;
+      const later = [...slots.values()]
+        .filter((s) => s.project === project._id && s.startsAt > startsAt && s.startsAt <= latest)
+        .sort((a, b) => a.startsAt - b.startsAt);
+      const candidates = [ensure(project, startsAt), ...later];
       const slot = candidates.find(
         (s) => !s.isBlocked && accept(s) && (!holdsSeat || s.bookedCount < s.capacity),
       );
@@ -227,6 +225,7 @@ export async function seedDatabase({ now = new Date(), password = DEMO_PASSWORD 
       staff: STAFF,
       takenNames,
       takenPhones,
+      existing: STORY_LEADS,
     }),
   ];
   for (const spec of specs) {

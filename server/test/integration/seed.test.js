@@ -29,6 +29,13 @@ describe('seedDatabase', () => {
     expect(await User.countDocuments({ role: 'sales_executive' })).toBe(4);
     expect(await User.countDocuments({ role: 'sales_head' })).toBe(1);
 
+    const executives = await User.find({ role: 'sales_executive' });
+    const loads = await Promise.all(
+      executives.map((e) => Lead.countDocuments({ assignedTo: e._id, mergedInto: null })),
+    );
+    // Project 1 has two executives and Project 2 three, so loads differ, but nobody sits idle.
+    expect(Math.min(...loads)).toBeGreaterThanOrEqual(10);
+
     const [hardik, nidhi, kavita] = await Promise.all(
       ['LD-58210', 'LD-58211', 'LD-58224'].map((code) =>
         Lead.findOne({ code }).populate('project', 'code'),
@@ -65,7 +72,8 @@ describe('seedDatabase', () => {
 
     const slots = await Slot.find().lean();
     const days = new Set(slots.map((s) => istDateOf(s.startsAt)));
-    expect(days.size).toBeGreaterThanOrEqual(21);
+    expect(days.size).toBe(21);
+    expect(slots).toHaveLength(2 * 21 * 7);
     expect(slots.some((s) => s.isBlocked)).toBe(true);
 
     const visits = await Visit.find().lean();

@@ -51,10 +51,19 @@ function responseFor(random, source, status) {
  * Generated leads that fill the list around the story leads, spread across
  * sources, projects, statuses and languages.
  */
-export function generateFillerLeads(random, { count, projects, staff, takenNames, takenPhones }) {
+export function generateFillerLeads(
+  random,
+  { count, projects, staff, takenNames, takenPhones, existing = [] },
+) {
   const leads = [];
   const executivesFor = (code) =>
     staff.filter((s) => s.role === 'sales_executive' && s.projects.includes(code));
+
+  // Same rule as the live assignment: the covering executive with the fewest leads gets the next one.
+  const load = new Map(staff.map((s) => [s.key, 0]));
+  for (const lead of existing) if (lead.owner) load.set(lead.owner, load.get(lead.owner) + 1);
+  const leastLoaded = (executives) =>
+    executives.reduce((best, e) => (load.get(e.key) < load.get(best.key) ? e : best));
 
   while (leads.length < count) {
     const name = `${random.pick(FIRST_NAMES)} ${random.pick(LAST_NAMES)}`;
@@ -74,7 +83,8 @@ export function generateFillerLeads(random, { count, projects, staff, takenNames
       ? visitFor(random, status)
       : undefined;
     const knowsBudget = random.chance(0.7);
-    const executives = executivesFor(project.code);
+    const owner = random.chance(0.95) ? leastLoaded(executivesFor(project.code)) : null;
+    if (owner) load.set(owner.key, load.get(owner.key) + 1);
 
     leads.push({
       key: `filler${leads.length + 1}`,
@@ -95,10 +105,10 @@ export function generateFillerLeads(random, { count, projects, staff, takenNames
       language: random.weighted(LANGUAGE_WEIGHTS),
       consent: random.chance(0.9),
       status: visit ? undefined : status,
-      owner: random.chance(0.95) ? random.pick(executives).key : undefined,
+      owner: owner?.key,
       arrived: arrivalFor(random, status, visit),
       response: responseFor(random, source, status),
-      chat: source !== 'hoarding_call' && random.chance(0.45) ? 'generic' : undefined,
+      chat: source !== 'hoarding_call' && random.chance(0.65) ? 'generic' : undefined,
       visit,
     });
   }
