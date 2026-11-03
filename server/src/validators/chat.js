@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { LANGUAGES } from '../constants/domain.js';
 import { normalizeIndianMobile } from '../lib/phone.js';
+import { objectId } from './common.js';
 
 export const startChatSchema = z.object({
   name: z.string({ error: 'Enter your name' }).trim().min(1, 'Enter your name').max(80),
@@ -14,6 +15,8 @@ export const startChatSchema = z.object({
   language: z.enum(LANGUAGES).optional(),
   consent: z.literal(true, { error: 'Please agree to be contacted about your enquiry' }),
 });
+
+export const buyerVisitSchema = z.object({ slotId: objectId('slot id') });
 
 export const chatMessageSchema = z.object({
   text: z

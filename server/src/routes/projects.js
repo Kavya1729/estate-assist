@@ -10,12 +10,18 @@ import {
   listSchedule,
   updateProject,
 } from '../services/projectAdminService.js';
+import { listCatalog } from '../services/catalogService.js';
 import { findActiveProject, listFreeSlots } from '../services/slotService.js';
 import { generateSlotsSchema, updateProjectSchema } from '../validators/projects.js';
 import { freeSlotsQuerySchema, projectCodeParamsSchema } from '../validators/slots.js';
 
 const router = Router();
 const salesHeadOnly = [requireAuth, requireRole(ROLES.SALES_HEAD)];
+
+/** Public: the project cards on the buyer landing page. */
+router.get('/catalog', async (_req, res) => {
+  res.json({ items: await listCatalog() });
+});
 
 /** Public: the buyer's slot picker and the assistant's booking tool read the same list. */
 router.get(

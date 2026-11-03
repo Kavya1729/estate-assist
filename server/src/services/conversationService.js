@@ -218,8 +218,18 @@ export async function handleBuyerMessage({ leadId, channel = 'web', text, provid
 /** Messages the buyer may see: no tool internals, and only from their current session on. */
 export async function getBuyerMessages({ leadId, channel = 'web', since }) {
   const conversation = await openConversation({ leadId, channel });
+  const lead = await Lead.findById(leadId)
+    .select('name language optedOut project')
+    .populate('project', 'code')
+    .lean();
   return {
     mode: conversation.mode,
+    buyer: {
+      name: lead.name ?? null,
+      language: lead.language,
+      projectCode: lead.project?.code ?? null,
+      optedOut: lead.optedOut,
+    },
     messages: conversation.messages
       .filter((m) => m.role !== 'system' && (!since || m.createdAt >= since))
       .map((m) => ({ id: m.id, role: m.role, text: m.text, createdAt: m.createdAt })),

@@ -57,7 +57,32 @@ const FIXED = {
   },
 };
 
+/** Written into the chat when the buyer books or cancels from the slot picker, not the model. */
+const VISIT_REPLIES = {
+  booked: {
+    en: (v) =>
+      `Your site visit to ${v.project} is booked for ${v.when}. We will send you a WhatsApp reminder a day before and 2 hours before.`,
+    hi: (v) =>
+      `${v.project} की आपकी साइट विज़िट ${v.when} के लिए बुक हो गई है। हम एक दिन पहले और 2 घंटे पहले WhatsApp पर याद दिलाएँगे।`,
+    gu: (v) =>
+      `${v.project} ની તમારી સાઇટ વિઝિટ ${v.when} માટે બુક થઈ ગઈ છે. અમે એક દિવસ પહેલાં અને 2 કલાક પહેલાં WhatsApp પર યાદ અપાવીશું.`,
+  },
+  cancelled: {
+    en: (v) =>
+      `Your site visit to ${v.project} on ${v.when} is cancelled. Book another time whenever you like.`,
+    hi: (v) =>
+      `${v.when} की ${v.project} की आपकी साइट विज़िट रद्द कर दी गई है। जब चाहें दूसरा समय बुक करें।`,
+    gu: (v) =>
+      `${v.when} ની ${v.project} ની તમારી સાઇટ વિઝિટ રદ કરવામાં આવી છે. ગમે ત્યારે બીજો સમય બુક કરો.`,
+  },
+};
+
 const pick = (byLanguage, language) => byLanguage[language] ?? byLanguage.en;
+
+/** @param {'booked' | 'cancelled'} kind */
+export function visitReply(kind, language, vars) {
+  return pick(VISIT_REPLIES[kind], language)(vars);
+}
 
 export function handoffReply(language, executiveName, reason) {
   return pick(HANDOFF_REPLIES[reason] ?? HANDOFF_REPLIES.default, language)(executiveName);
