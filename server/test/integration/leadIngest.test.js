@@ -133,6 +133,31 @@ describe('creating and merging leads', () => {
     expect(lead.profile.budgetMax).toBe(110 * LAKH);
   });
 
+  it('never fills in a budget that would invert the known range', async () => {
+    await ingest('portal', { phone: '9825012345', budgetMax: 50 * LAKH });
+
+    const res = await ingest('website', { phone: '9825012345', budgetMin: 60 * LAKH });
+
+    expect(res.status).toBe(200);
+    const lead = await Lead.findOne({ normalizedPhone: '9825012345' });
+    expect(lead.profile.budgetMax).toBe(50 * LAKH);
+    expect(lead.profile.budgetMin).toBeUndefined();
+  });
+
+  it('merges by email into a phoneless lead even when an older lead with a phone shares it', async () => {
+    await ingest('portal', { name: 'Nidhi Shah', phone: '9727012345', email: 'shah@example.com' });
+    const phoneless = await Lead.create({
+      name: 'Ketan Shah',
+      email: 'shah@example.com',
+      primarySource: 'website',
+    });
+
+    const res = await ingest('social_ad', { phone: '9727099999', email: 'shah@example.com' });
+
+    expect(res.body).toMatchObject({ outcome: 'merged', matchedBy: 'email' });
+    expect(res.body.lead.id).toBe(phoneless.id);
+  });
+
   it('merges by email when the stored lead has no phone', async () => {
     const first = await ingest('website', { name: 'Nidhi Shah', email: 'nidhi@example.com' });
 

@@ -30,8 +30,9 @@ async function findExistingLead({ normalizedPhone, email }) {
     if (lead) return { lead, matchedBy: 'phone' };
   }
   if (email) {
-    const lead = await Lead.findOne({ email }).sort({ createdAt: 1 });
-    if (lead && (!lead.normalizedPhone || !normalizedPhone)) return { lead, matchedBy: 'email' };
+    const filter = normalizedPhone ? { email, normalizedPhone: null } : { email };
+    const lead = await Lead.findOne(filter).sort({ createdAt: 1 });
+    if (lead) return { lead, matchedBy: 'email' };
   }
   return null;
 }
@@ -44,6 +45,12 @@ function applyInput(lead, input, project) {
 
   for (const field of PROFILE_FIELDS) {
     if (lead.profile[field] == null && input[field] != null) lead.profile[field] = input[field];
+  }
+  const { budgetMin, budgetMax } = lead.profile;
+  if (budgetMin != null && budgetMax != null && budgetMin > budgetMax) {
+    // Blank-filling from two different sources produced an inverted range; keep the known side.
+    if (input.budgetMin === budgetMin) lead.profile.budgetMin = undefined;
+    else lead.profile.budgetMax = undefined;
   }
   if (input.timeline && lead.profile.timeline === 'unknown') lead.profile.timeline = input.timeline;
 
