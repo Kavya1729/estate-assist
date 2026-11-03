@@ -4,8 +4,14 @@ export function notFound(req, _res, next) {
   next(new HttpError(404, `Route not found: ${req.method} ${req.originalUrl}`));
 }
 
+function fromValidationError(err) {
+  const details = Object.values(err.errors).map((e) => ({ field: e.path, message: e.message }));
+  return new HttpError(400, 'Some fields are invalid.', details);
+}
+
 export function errorHandler(err, _req, res, next) {
   if (res.headersSent) return next(err);
+  if (err.name === 'ValidationError' && err.errors) err = fromValidationError(err);
 
   const status = Number.isInteger(err.status) && err.status >= 400 ? err.status : 500;
   if (status >= 500) console.error(err);
