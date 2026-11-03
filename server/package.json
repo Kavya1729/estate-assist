@@ -10,6 +10,12 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "config": {
+    "mongodbMemoryServer": {
+      "version": "8.2.6",
+      "downloadDir": "../node_modules/.cache/mongodb-memory-server"
+    }
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
