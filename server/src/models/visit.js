@@ -9,8 +9,9 @@ const visitSchema = new mongoose.Schema(
     slot: { type: mongoose.Schema.Types.ObjectId, ref: 'Slot', required: true },
     project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
 
-    /** Copied from the slot so the reminder job can query visits without a join. */
+    /** Copied from the slot so the reminder job and lists can read visits without a join. */
     startsAt: { type: Date, required: true },
+    endsAt: { type: Date, required: true },
 
     status: { type: String, enum: VISIT_STATUSES, default: 'booked' },
     bookedVia: { type: String, enum: ['assistant', 'staff'], required: true },

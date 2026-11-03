@@ -35,6 +35,11 @@ export const MESSAGE_ROLES = Object.freeze(['buyer', 'assistant', 'staff', 'syst
 
 export const VISIT_STATUSES = Object.freeze(['booked', 'visited', 'no_show', 'cancelled']);
 
+export const VISIT_OUTCOMES = Object.freeze(['visited', 'no_show']);
+
+/** Furthest ahead a buyer can look for (and book) a site-visit slot. */
+export const MAX_SLOT_DAYS_AHEAD = 30;
+
 export const OUTBOX_TEMPLATES = Object.freeze([
   'visit_confirmation',
   'reminder_24h',

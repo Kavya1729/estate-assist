@@ -3,7 +3,7 @@ import { escapeRegex, nameSimilarity } from '../lib/names.js';
 import { normalizeIndianMobile } from '../lib/phone.js';
 import { Lead, Project } from '../models/index.js';
 import { pickExecutive } from './assignmentService.js';
-import { scoreLead } from './leadScoring.js';
+import { applyLeadScore } from './leadScoring.js';
 
 export const SIMILAR_NAME_THRESHOLD = 0.85;
 const MAX_SOURCE_TOUCHES = 50;
@@ -112,10 +112,7 @@ async function findPossibleDuplicates(lead) {
 async function refreshScoreAndOwner(lead, project) {
   const projectForScore =
     project ?? (lead.project ? await Project.findById(lead.project).lean() : null);
-  const { score, temperature, reasons } = scoreLead(lead, projectForScore);
-  lead.score = score;
-  lead.temperature = temperature;
-  lead.scoreReasons = reasons;
+  applyLeadScore(lead, projectForScore);
 
   if (!lead.assignedTo) {
     const owner = await pickExecutive(lead.project);

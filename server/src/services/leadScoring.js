@@ -55,3 +55,11 @@ export function scoreLead(lead, project) {
   const temperature = score >= HOT_THRESHOLD ? 'hot' : score >= WARM_THRESHOLD ? 'warm' : 'cold';
   return { score, temperature, reasons };
 }
+
+/** Recomputes the score on a lead document in place (call before saving). */
+export function applyLeadScore(lead, project) {
+  const { score, temperature, reasons } = scoreLead(lead, project);
+  lead.score = score;
+  lead.temperature = temperature;
+  lead.scoreReasons = reasons;
+}

@@ -97,7 +97,13 @@ describe('Visit', () => {
     const project = await createProject();
     const slot = await createSlot(project);
     const lead = await Lead.create({ primarySource: 'portal' });
-    const visit = { lead: lead.id, slot: slot.id, project: project.id, startsAt: slot.startsAt };
+    const visit = {
+      lead: lead.id,
+      slot: slot.id,
+      project: project.id,
+      startsAt: slot.startsAt,
+      endsAt: slot.endsAt,
+    };
 
     const first = await Visit.create({ ...visit, bookedVia: 'assistant' });
     await expect(Visit.create({ ...visit, bookedVia: 'staff' })).rejects.toMatchObject({
