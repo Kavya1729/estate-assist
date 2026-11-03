@@ -9,7 +9,7 @@ const LAKH = 1e5;
 const CRORE = 1e7;
 
 const NUMBER_WITH_UNIT =
-  /(\d[\d,]*(?:\.\d+)?)\s*(lakhs?|lacs?|crores?|cr|लाख|करोड़|करोड|લાખ|કરોડ)?/giu;
+  /(\d+(?:,\d+)*(?:\.\d+)?)\s*(lakhs?|lacs?|crores?|cr|लाख|करोड़|करोड|લાખ|કરોડ)?/giu;
 /** "1) ..." or "2. ..." at the start of a line or after a space: list numbering, not a claim. */
 const LIST_MARKER = /(^|\s)\d[).](?=\s)/gmu;
 

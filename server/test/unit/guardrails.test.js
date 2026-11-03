@@ -97,6 +97,10 @@ describe('number post-check', () => {
     expect(unverified('Options:\n1) Sat, 7 Nov, 11:00 am\n2. call back')).toEqual([]);
   });
 
+  it('reports a number without the punctuation after it', () => {
+    expect(unverified('Possession is in March 2025, guaranteed.')).toEqual(['2025']);
+  });
+
   it('catches invented prices, discounts and dates', () => {
     expect(unverified('3 BHK starts at ₹89 lakh.')).toEqual(['89 lakh']);
     expect(unverified('You get a 5% discount.')).toEqual(['5']);
