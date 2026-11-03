@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import authRouter from './routes/auth.js';
+import chatRouter from './routes/chat.js';
 import healthRouter from './routes/health.js';
 import leadsRouter from './routes/leads.js';
 import projectsRouter from './routes/projects.js';
@@ -22,6 +23,7 @@ export function createApp({ clientOrigin, trustProxy = false } = {}) {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/chat', chatRouter);
   app.use('/api/leads', leadsRouter);
   app.use('/api/projects', projectsRouter);
   app.use('/api/visits', visitsRouter);

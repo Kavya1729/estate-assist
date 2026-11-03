@@ -1,6 +1,6 @@
 import { HttpError } from '../lib/httpError.js';
 import { User } from '../models/index.js';
-import { verifyToken } from '../services/authService.js';
+import { BUYER_TOKEN_TYPE, verifyToken } from '../services/authService.js';
 
 /**
  * Requires a valid `Authorization: Bearer <token>` header and loads the staff
@@ -22,6 +22,8 @@ export async function requireAuth(req, _res, next) {
         : 'Please sign in to continue.',
     );
   }
+
+  if (payload.typ === BUYER_TOKEN_TYPE) throw new HttpError(401, 'Please sign in to continue.');
 
   const user = await User.findById(payload.sub);
   if (!user || !user.isActive) throw new HttpError(401, 'Please sign in to continue.');
