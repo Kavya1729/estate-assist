@@ -1,4 +1,4 @@
-export { Conversation } from './conversation.js';
+export { Conversation, MAX_MESSAGES_PER_CONVERSATION } from './conversation.js';
 export { Counter, nextSequence } from './counter.js';
 export { Lead } from './lead.js';
 export { Outbox } from './outbox.js';

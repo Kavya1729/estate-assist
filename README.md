@@ -26,6 +26,7 @@ Inside `server/`, a request flows route, then middleware, then service, then mod
 ```
 server/
   src/
+    ai/           assistant: LLM providers (Groq, mock), tools, prompt, agent loop
     config/       environment and database connection
     constants/    domain values shared across layers (roles, sources, statuses)
     jobs/         scheduled background work (visit reminders, message dispatch)
