@@ -12,6 +12,7 @@ function fromValidationError(err) {
 export function errorHandler(err, _req, res, next) {
   if (res.headersSent) return next(err);
   if (err.name === 'ValidationError' && err.errors) err = fromValidationError(err);
+  if (err.name === 'CastError') err = new HttpError(400, `Invalid ${err.path}.`);
 
   const status = Number.isInteger(err.status) && err.status >= 400 ? err.status : 500;
   if (status >= 500) console.error(err);

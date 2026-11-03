@@ -37,7 +37,7 @@ export const VISIT_STATUSES = Object.freeze(['booked', 'visited', 'no_show', 'ca
 
 export const VISIT_OUTCOMES = Object.freeze(['visited', 'no_show']);
 
-/** Furthest ahead a buyer can look for (and book) a site-visit slot. */
+/** Longest window, in days, one free-slot request can cover. */
 export const MAX_SLOT_DAYS_AHEAD = 30;
 
 export const OUTBOX_TEMPLATES = Object.freeze([

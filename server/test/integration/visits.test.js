@@ -218,6 +218,30 @@ describe('visit lifecycle', () => {
     expect(await Outbox.countDocuments({ template: 'visit_confirmation' })).toBe(2);
   });
 
+  it('refuses to reschedule into the same slot', async () => {
+    const { slot, visit } = await bookedVisit();
+
+    const res = await request(app)
+      .post(`/api/visits/${visit.id}/reschedule`)
+      .set(authHeader(executive))
+      .send({ slotId: slot.id });
+
+    expect(res.status).toBe(400);
+    expect((await Slot.findById(slot._id)).bookedCount).toBe(1);
+  });
+
+  it('refuses to cancel a visit that has already started', async () => {
+    const { visit } = await bookedVisit();
+    await Visit.updateOne({ _id: visit._id }, { $set: { startsAt: new Date(Date.now() - HOUR) } });
+
+    const res = await request(app)
+      .post(`/api/visits/${visit.id}/cancel`)
+      .set(authHeader(executive));
+
+    expect(res.status).toBe(400);
+    expect((await Visit.findById(visit._id)).status).toBe('booked');
+  });
+
   it('keeps the original booking when the new slot is full', async () => {
     const { slot, visit } = await bookedVisit();
     const full = await createSlot(project, {

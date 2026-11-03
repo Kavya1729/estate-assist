@@ -30,7 +30,8 @@ export async function queueMessage({ lead, visit, template, vars, dedupeKey }, {
     const [message] = await Outbox.create([doc], { session });
     return message;
   } catch (err) {
-    if (isDuplicateKey(err) && dedupeKey) return null;
+    // Inside a transaction the server has already aborted it, so the error must propagate.
+    if (isDuplicateKey(err) && dedupeKey && !session) return null;
     throw err;
   }
 }
