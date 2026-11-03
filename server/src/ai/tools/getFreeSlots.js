@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { formatVisitTime } from '../../lib/time.js';
 import { Lead, Project } from '../../models/index.js';
 import { listFreeSlots } from '../../services/slotService.js';
+import { isoDate } from '../../validators/common.js';
 
 const MAX_OFFERED = 8;
 
@@ -13,9 +14,7 @@ export const getFreeSlots = {
   schema: z
     .object({
       projectCode: z.string().trim().toUpperCase().max(10).optional(),
-      date: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
+      date: isoDate()
         .optional()
         .describe('First day to look at, YYYY-MM-DD in IST. Defaults to today.'),
       days: z

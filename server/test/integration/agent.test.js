@@ -156,6 +156,25 @@ describe('agent turn', () => {
   });
 });
 
+describe('after a handoff', () => {
+  it('refuses further tool calls in the same turn', async () => {
+    const slot = await createSlot(project);
+    let refusal;
+
+    await chat('I want to negotiate, also book Saturday', [
+      call('handoff_to_human', { reason: 'price_or_discount', summary: { needs: 'Negotiation' } }),
+      call('book_visit', { slotId: slot.id }),
+      (messages) => {
+        refusal = lastToolResult(messages);
+        return say('Ravi will call you about the price and the visit.');
+      },
+    ]);
+
+    expect(refusal).toMatchObject({ ok: false, error: expect.stringMatching(/handed to a sales/) });
+    expect(await Visit.countDocuments()).toBe(0);
+  });
+});
+
 describe('limits and fallbacks', () => {
   it(`forces a handoff after ${MAX_TOOL_CALLS_PER_TURN} tool calls in one turn`, async () => {
     const script = Array.from({ length: MAX_TOOL_CALLS_PER_TURN + 1 }, (_, i) =>

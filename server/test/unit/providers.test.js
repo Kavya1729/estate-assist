@@ -71,6 +71,23 @@ describe('Groq provider', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it('retries once when the model produced a malformed tool call', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse(400, {
+          error: { message: 'Failed to call a function', code: 'tool_use_failed' },
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse(200, toolCallBody));
+    const provider = createGroqProvider({ apiKey: 'k', model: 'm', fetchImpl });
+
+    await expect(provider.complete({ messages, tools })).resolves.toMatchObject({
+      toolCalls: [{ name: 'get_facts' }],
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it('does not retry an invalid key and reports the reason', async () => {
     const fetchImpl = vi.fn(async () =>
       jsonResponse(401, { error: { message: 'Invalid API Key' } }),

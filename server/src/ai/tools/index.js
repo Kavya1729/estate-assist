@@ -43,23 +43,25 @@ function parseArguments(raw) {
 export async function runTool(name, rawArguments, context) {
   const tool = byName.get(name);
   const args = parseArguments(rawArguments);
+  // Rejected input is kept only as a short string: arbitrary model JSON is never stored as fields.
+  const rejected = (error, extra = {}) => ({
+    name: String(name).slice(0, 60),
+    args: {
+      raw: String(
+        typeof rawArguments === 'string' ? rawArguments : JSON.stringify(rawArguments),
+      ).slice(0, 500),
+    },
+    ok: false,
+    result: { ok: false, error, ...extra },
+  });
 
-  if (!tool) {
-    return { name, args, ok: false, result: { ok: false, error: `Unknown tool: ${name}` } };
-  }
-  if (args === undefined) {
-    return {
-      name,
-      args: {},
-      ok: false,
-      result: { ok: false, error: 'Arguments were not valid JSON.' },
-    };
-  }
+  if (!tool) return rejected(`Unknown tool: ${name}`);
+  if (args === undefined) return rejected('Arguments were not valid JSON.');
 
   const parsed = tool.schema.safeParse(args);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join('.') || 'input'}: ${i.message}`);
-    return { name, args, ok: false, result: { ok: false, error: 'Invalid arguments', issues } };
+    return rejected('Invalid arguments', { issues });
   }
 
   const result = await tool.run(parsed.data, context);

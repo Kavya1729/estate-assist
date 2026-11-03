@@ -48,6 +48,23 @@ describe('runTool input validation (no database needed)', () => {
     expect(outcome.result.issues).toEqual([expect.stringMatching(/^slotId: /)]);
   });
 
+  it('rejects a date that does not exist', async () => {
+    const outcome = await runTool('get_free_slots', JSON.stringify({ date: '2026-02-30' }), {});
+    expect(outcome.ok).toBe(false);
+    expect(outcome.result.issues).toEqual(['date: Enter a real date']);
+  });
+
+  it('keeps rejected input only as a short string, never as stored fields', async () => {
+    const outcome = await runTool(
+      'book_visit',
+      JSON.stringify({ slotId: { $ne: null }, $where: 'x'.repeat(1000) }),
+      {},
+    );
+    expect(outcome.ok).toBe(false);
+    expect(Object.keys(outcome.args)).toEqual(['raw']);
+    expect(outcome.args.raw).toHaveLength(500);
+  });
+
   it('rejects unexpected fields', async () => {
     const outcome = await runTool(
       'handoff_to_human',

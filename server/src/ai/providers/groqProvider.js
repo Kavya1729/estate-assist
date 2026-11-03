@@ -13,13 +13,16 @@ function retryDelay(response, attempt) {
 }
 
 async function errorFrom(response) {
-  let detail = '';
+  let error = {};
   try {
-    detail = (await response.json())?.error?.message ?? '';
+    error = (await response.json())?.error ?? {};
   } catch {
     // Body was not JSON; the status code is enough.
   }
-  const retryable = response.status === 429 || response.status >= 500;
+  const detail = error.message ?? '';
+  // Llama occasionally emits a malformed tool call; a fresh sample usually succeeds.
+  const retryable =
+    response.status === 429 || response.status >= 500 || error.code === 'tool_use_failed';
   return new LLMError(`Groq returned ${response.status}${detail ? `: ${detail}` : ''}`, {
     status: response.status,
     retryable,

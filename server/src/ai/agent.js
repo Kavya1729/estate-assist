@@ -5,6 +5,13 @@ export const MAX_TOOL_CALLS_PER_TURN = 5;
 
 const MAX_STORED_RESULT_CHARS = 4000;
 
+/** Once a person owns the conversation the model may only write its closing message. */
+const AFTER_HANDOFF = {
+  ok: false,
+  error:
+    'The buyer has been handed to a sales executive. Do not call more tools; reply to the buyer now.',
+};
+
 /** Keeps stored tool results small; very large results are replaced by a marker. */
 function storable(result) {
   return JSON.stringify(result).length > MAX_STORED_RESULT_CHARS ? { truncated: true } : result;
@@ -26,6 +33,7 @@ function storable(result) {
 export async function runAgentTurn({ provider, messages, context, logger = console }) {
   const transcript = [...messages];
   const toolCalls = [];
+  let handedOff = false;
 
   const end = (outcome) => ({ ...outcome, toolCalls });
 
@@ -62,11 +70,16 @@ export async function runAgentTurn({ provider, messages, context, logger = conso
       }
 
       let outcome;
-      try {
-        outcome = await runTool(call.name, call.arguments, context);
-      } catch (err) {
-        logger.error(`[agent] tool ${call.name} failed: ${err.message}`);
-        return end({ reply: null, forcedHandoff: 'assistant_error' });
+      if (handedOff) {
+        outcome = { name: call.name, args: {}, ok: false, result: AFTER_HANDOFF };
+      } else {
+        try {
+          outcome = await runTool(call.name, call.arguments, context);
+        } catch (err) {
+          logger.error(`[agent] tool ${call.name} failed: ${err.message}`);
+          return end({ reply: null, forcedHandoff: 'assistant_error' });
+        }
+        handedOff = outcome.name === 'handoff_to_human' && outcome.ok;
       }
 
       toolCalls.push({
