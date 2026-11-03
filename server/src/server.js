@@ -1,6 +1,7 @@
 import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { createApp } from './app.js';
+import { startJobs } from './jobs/scheduler.js';
 
 try {
   await connectDatabase(env.MONGODB_URI);
@@ -18,12 +19,15 @@ const server = app.listen(env.PORT, () => {
   console.log(`API listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
 });
 
+const stopJobs = env.JOBS_ENABLED ? startJobs() : async () => {};
+
 server.on('error', async (err) => {
   console.error(
     err.code === 'EADDRINUSE'
       ? `Port ${env.PORT} is already in use. Stop the other process or set PORT.`
       : `Server error: ${err.message}`,
   );
+  await stopJobs();
   await disconnectDatabase();
   process.exit(1);
 });
@@ -31,6 +35,7 @@ server.on('error', async (err) => {
 function shutdown(signal) {
   console.log(`${signal} received, closing server`);
   server.close(async () => {
+    await stopJobs();
     await disconnectDatabase();
     process.exit(0);
   });

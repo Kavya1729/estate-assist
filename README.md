@@ -28,7 +28,8 @@ server/
   src/
     config/       environment and database connection
     constants/    domain values shared across layers (roles, sources, statuses)
-    lib/          small pure helpers (phone normalisation, HttpError)
+    jobs/         scheduled background work (visit reminders, message dispatch)
+    lib/          small pure helpers (phone, names, IST time, HttpError)
     middleware/   auth, role guard, validation, rate limiting, error handling
     models/       Mongoose schemas and indexes
     routes/       HTTP endpoints, thin: validate, call a service, respond
