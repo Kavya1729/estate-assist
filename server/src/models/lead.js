@@ -70,6 +70,8 @@ const leadSchema = new mongoose.Schema(
     handoff: {
       reason: { type: String, enum: HANDOFF_REASONS },
       at: { type: Date },
+      /** Set when a staff member takes the conversation over; until then the handoff is pending. */
+      acknowledgedAt: { type: Date },
       summary: {
         needs: { type: String, maxlength: 500 },
         budget: { type: String, maxlength: 120 },
@@ -88,6 +90,8 @@ const leadSchema = new mongoose.Schema(
     optedOutAt: { type: Date },
 
     possibleDuplicates: { type: [duplicateFlagSchema], default: [] },
+    /** Set on a duplicate after staff merged it into another lead; it then leaves the lead list. */
+    mergedInto: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
 
     firstInboundAt: { type: Date, default: Date.now },
     firstResponseAt: { type: Date },
@@ -105,6 +109,7 @@ leadSchema.index({ primarySource: 1, createdAt: -1 });
 leadSchema.index({ temperature: 1, updatedAt: -1 });
 leadSchema.index({ 'possibleDuplicates.resolution': 1 });
 leadSchema.index({ nameKey: 1 });
+leadSchema.index({ 'handoff.at': -1 });
 
 leadSchema.pre('validate', function prepare() {
   if (this.isModified('name')) this.nameKey = normalizeName(this.name) || undefined;

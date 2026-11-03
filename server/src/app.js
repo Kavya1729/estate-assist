@@ -7,6 +7,8 @@ import chatRouter from './routes/chat.js';
 import healthRouter from './routes/health.js';
 import leadsRouter from './routes/leads.js';
 import projectsRouter from './routes/projects.js';
+import reviewsRouter from './routes/reviews.js';
+import staffRouter from './routes/staff.js';
 import visitsRouter from './routes/visits.js';
 import { notFound, errorHandler } from './middleware/errors.js';
 
@@ -26,6 +28,8 @@ export function createApp({ clientOrigin, trustProxy = false } = {}) {
   app.use('/api/chat', chatRouter);
   app.use('/api/leads', leadsRouter);
   app.use('/api/projects', projectsRouter);
+  app.use('/api/reviews', reviewsRouter);
+  app.use('/api/staff', staffRouter);
   app.use('/api/visits', visitsRouter);
 
   app.use(notFound);

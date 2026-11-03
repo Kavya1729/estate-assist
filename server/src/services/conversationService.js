@@ -19,12 +19,13 @@ import {
 import { handOffToHuman } from './handoffService.js';
 
 /** Appends messages atomically, keeping only the newest ones once the cap is reached. */
-async function appendMessages(conversationId, messages, set = {}) {
+export async function appendMessages(conversationId, messages, { set = {}, unset } = {}) {
   await Conversation.updateOne(
     { _id: conversationId },
     {
       $push: { messages: { $each: messages, $slice: -MAX_MESSAGES_PER_CONVERSATION } },
       $set: { lastMessageAt: new Date(), ...set },
+      ...(unset && { $unset: unset }),
     },
   );
 }
@@ -146,8 +147,8 @@ export async function handleBuyerMessage({ leadId, channel = 'web', text, provid
     lead = { ...lead, language };
   }
 
-  const finish = async (reply, { set, ...result } = {}) => {
-    await appendMessages(conversation._id, reply ? [buyerMessage, reply] : [buyerMessage], set);
+  const finish = async (reply, { update, ...result } = {}) => {
+    await appendMessages(conversation._id, reply ? [buyerMessage, reply] : [buyerMessage], update);
     if (reply) await markResponded(lead._id);
     const { mode } = await Conversation.findById(conversation._id).select('mode').lean();
     return { mode, reply, forcedHandoff: null, guardrail: null, ...result };
@@ -204,7 +205,11 @@ export async function handleBuyerMessage({ leadId, channel = 'web', text, provid
       flagReason: `Unverified numbers: ${unverified.join(', ')}`.slice(0, 200),
       blockedText: turn.reply.slice(0, 4000),
     });
-    return finish(reply, { guardrail: 'unverified_numbers', set: { flagged: true } });
+    // A new flag puts an already reviewed chat back in the review queue.
+    return finish(reply, {
+      guardrail: 'unverified_numbers',
+      update: { set: { flagged: true }, unset: { reviewedAt: 1, reviewedBy: 1 } },
+    });
   }
 
   return finish(assistantMessage(turn.reply, { toolCalls }));

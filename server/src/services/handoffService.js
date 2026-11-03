@@ -30,7 +30,7 @@ export async function handOffToHuman({ leadId, conversationId, reason, summary =
   const firstHandoff = Boolean(conversation);
 
   if (firstHandoff || !lead.handoff?.reason) {
-    lead.handoff = { reason, at: new Date(), summary };
+    lead.handoff = { reason, at: new Date(), summary, acknowledgedAt: undefined };
   }
   await lead.save();
 
