@@ -21,7 +21,18 @@ Requirements: Node.js 20.19+ (22 LTS recommended), npm 10+, and MongoDB (local i
    - Leave `MONGODB_URI` empty to use a local MongoDB at `mongodb://127.0.0.1:27017/estate-assist`.
    - With `LLM_PROVIDER=mock` the assistant runs without an API key.
 
-3. Start the API and the web app together:
+3. Load the demo data (wipes the database in `MONGODB_URI` first):
+
+   ```bash
+   npm run seed
+   ```
+
+   It creates both projects, five staff accounts, about 60 leads with chats, three weeks of slots,
+   visits and source spend. The same command always produces the same data. Every staff account uses
+   the password in `SEED_PASSWORD` (default `Demo@12345`). With `NODE_ENV=production` it refuses to
+   run; use `node src/seed/index.js --force` inside `server/` if you really mean it.
+
+4. Start the API and the web app together:
 
    ```bash
    npm run dev
@@ -53,6 +64,7 @@ Requirements: Node.js 20.19+ (22 LTS recommended), npm 10+, and MongoDB (local i
 | Script           | What it does                                   |
 | ---------------- | ---------------------------------------------- |
 | `npm run dev`    | API and web app with live reload               |
+| `npm run seed`   | Replace the database contents with demo data   |
 | `npm test`       | API tests against an in-memory MongoDB         |
 | `npm run lint`   | ESLint across server and client                |
 | `npm run format` | Prettier write                                 |
@@ -63,7 +75,7 @@ first run downloads the MongoDB binary (about 100 MB) and caches it.
 
 ## Environment variables (names only)
 
-Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN`, `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`, `INGEST_API_KEY`, `JOBS_ENABLED`.
+Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN`, `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`, `INGEST_API_KEY`, `JOBS_ENABLED`, `SEED_PASSWORD`.
 
 Visit reminders run inside the API process every minute (`JOBS_ENABLED=true`). They are idempotent, so
 running more than one instance is safe. On a free host that sleeps when idle, reminders that came due

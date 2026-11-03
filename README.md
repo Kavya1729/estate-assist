@@ -35,6 +35,7 @@ server/
     middleware/   auth, role guard, validation, rate limiting, error handling
     models/       Mongoose schemas and indexes
     routes/       HTTP endpoints, thin: validate, call a service, respond
+    seed/         `npm run seed`: demo projects, staff, leads, chats, slots, visits, spend
     services/     business logic
     validators/   zod request schemas
     app.js        Express app factory (used by tests)
@@ -44,5 +45,21 @@ server/
     integration/  HTTP and database behaviour against in-memory MongoDB
     helpers/      test database and factories
 ```
+
+## Demo data
+
+`npm run seed` loads Project 1 and Project 2 with their fact sheets, a sales head and four sales
+executives, and 60 leads, including the brief's sample rows (Hardik Patel `LD-58210`, Nidhi Shah
+`LD-58211`, Kavita Joshi `LD-58224`). All names, numbers and RERA registrations are made up.
+
+| Login                       | Role            |
+| --------------------------- | --------------- |
+| `meera.desai@example.com`   | Sales head      |
+| `ravi.mehta@example.com`    | Sales executive |
+| `amit.rana@example.com`     | Sales executive |
+| `pooja.trivedi@example.com` | Sales executive |
+| `sanjay.parmar@example.com` | Sales executive |
+
+Every account uses the password in `SEED_PASSWORD` (default `Demo@12345`).
 
 Setup and deployment steps live in `docs/deployment.md`.

@@ -19,6 +19,7 @@ const schema = z
     GROQ_API_KEY: z.string().optional(),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
     INGEST_API_KEY: z.string().min(24, 'INGEST_API_KEY must be at least 24 characters').optional(),
+    SEED_PASSWORD: z.string().min(8, 'SEED_PASSWORD must be at least 8 characters').optional(),
     JOBS_ENABLED: z
       .enum(['true', 'false'], { error: 'JOBS_ENABLED must be true or false' })
       .default('true')
