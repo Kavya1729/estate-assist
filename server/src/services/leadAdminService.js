@@ -22,6 +22,9 @@ async function rescore(lead, session) {
 export async function updateLead(user, leadId, patch) {
   const lead = await findManageableLead(user, leadId);
 
+  if (patch.status && patch.status !== lead.status && lead.status === 'visit_booked') {
+    throw new HttpError(409, 'This lead has a visit booked. Cancel the visit first.');
+  }
   if (patch.projectCode) {
     const project = await Project.findOne({ code: patch.projectCode, isActive: true }).lean();
     if (!project) throw new HttpError(400, `Unknown project: ${patch.projectCode}`);
@@ -139,6 +142,13 @@ async function mergeLeads(keepId, dropId) {
     drop.mergedInto = keep._id;
     drop.status = 'lost';
     await drop.save({ session });
+
+    // Other leads flagged against the merged-away record now point at the kept one.
+    await Lead.updateMany(
+      { _id: { $ne: keep._id }, 'possibleDuplicates.lead': drop._id },
+      { $set: { 'possibleDuplicates.$[flag].lead': keep._id } },
+      { arrayFilters: [{ 'flag.lead': drop._id, 'flag.resolution': 'open' }], session },
+    );
     return keep;
   });
 }

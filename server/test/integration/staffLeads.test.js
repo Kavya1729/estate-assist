@@ -177,6 +177,21 @@ describe('PATCH /api/leads/:id', () => {
     expect((await patch(ravi, `/api/leads/${lead.id}`, { status: 'visited' })).status).toBe(400);
   });
 
+  it('will not change the status of a lead with a visit booked', async () => {
+    const lead = await createLead(project, { assignedTo: ravi._id });
+    await bookVisit({
+      leadId: lead._id,
+      slotId: (await createSlot(project))._id,
+      bookedVia: 'staff',
+    });
+
+    const res = await patch(ravi, `/api/leads/${lead.id}`, { status: 'lost' });
+
+    expect(res.status).toBe(409);
+    expect((await Lead.findById(lead._id)).status).toBe('visit_booked');
+    expect((await patch(ravi, `/api/leads/${lead.id}`, { bhk: 3 })).status).toBe(200);
+  });
+
   it('rejects an empty patch and unknown fields', async () => {
     const lead = await createLead(project, { assignedTo: ravi._id });
     expect((await patch(ravi, `/api/leads/${lead.id}`, {})).status).toBe(400);
@@ -300,6 +315,23 @@ describe('POST /api/leads/:id/duplicates/:otherId', () => {
 
     expect(res.status).toBe(409);
     expect(await Lead.countDocuments({ mergedInto: { $exists: true } })).toBe(0);
+  });
+
+  it('points other open flags at the kept lead', async () => {
+    const { original, duplicate } = await flaggedPair();
+    const third = await createLead(project, {
+      name: 'Kavita Joshi',
+      assignedTo: ravi._id,
+      possibleDuplicates: [{ lead: original._id, reason: 'similar_name' }],
+    });
+
+    await post(ravi, `/api/leads/${duplicate.id}/duplicates/${original.id}`, {
+      resolution: 'merged',
+    });
+
+    const [flag] = (await Lead.findById(third._id)).possibleDuplicates;
+    expect(String(flag.lead)).toBe(duplicate.id);
+    expect(flag.resolution).toBe('open');
   });
 
   it('returns 404 when there is no open flag for that pair', async () => {
