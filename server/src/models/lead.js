@@ -8,6 +8,7 @@ import {
   LEAD_STATUSES,
   LEAD_TEMPERATURES,
 } from '../constants/domain.js';
+import { normalizeName } from '../lib/names.js';
 import { normalizeIndianMobile } from '../lib/phone.js';
 import { nextSequence } from './counter.js';
 import { toJSON } from './plugins/toJSON.js';
@@ -38,6 +39,8 @@ const leadSchema = new mongoose.Schema(
   {
     code: { type: String, unique: true },
     name: { type: String, trim: true, maxlength: 80 },
+    /** Normalised name, indexed for the possible-duplicate check. */
+    nameKey: { type: String },
     phone: { type: String, trim: true, maxlength: 20 },
     normalizedPhone: { type: String },
     email: { type: String, trim: true, lowercase: true, maxlength: 120 },
@@ -57,6 +60,7 @@ const leadSchema = new mongoose.Schema(
     language: { type: String, enum: LANGUAGES, default: 'en' },
 
     score: { type: Number, min: 0, max: 100, default: 0 },
+    scoreReasons: { type: [String], default: [] },
     temperature: { type: String, enum: LEAD_TEMPERATURES, default: 'cold' },
     status: { type: String, enum: LEAD_STATUSES, default: 'new' },
 
@@ -98,8 +102,11 @@ leadSchema.index({ assignedTo: 1, status: 1, updatedAt: -1 });
 leadSchema.index({ primarySource: 1, createdAt: -1 });
 leadSchema.index({ temperature: 1, updatedAt: -1 });
 leadSchema.index({ 'possibleDuplicates.resolution': 1 });
+leadSchema.index({ nameKey: 1 });
 
 leadSchema.pre('validate', function prepare() {
+  if (this.isModified('name')) this.nameKey = normalizeName(this.name) || undefined;
+
   if (this.isModified('phone')) {
     this.normalizedPhone = this.phone ? normalizeIndianMobile(this.phone) : undefined;
     if (this.phone && !this.normalizedPhone) {

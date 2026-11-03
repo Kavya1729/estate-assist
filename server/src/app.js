@@ -4,6 +4,7 @@ import helmet from 'helmet';
 
 import authRouter from './routes/auth.js';
 import healthRouter from './routes/health.js';
+import leadsRouter from './routes/leads.js';
 import { notFound, errorHandler } from './middleware/errors.js';
 
 export function createApp({ clientOrigin, trustProxy = false } = {}) {
@@ -19,6 +20,7 @@ export function createApp({ clientOrigin, trustProxy = false } = {}) {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/leads', leadsRouter);
 
   app.use(notFound);
   app.use(errorHandler);

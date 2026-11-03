@@ -63,6 +63,6 @@ first run downloads the MongoDB binary (about 100 MB) and caches it.
 
 ## Environment variables (names only)
 
-Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN`, `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`.
+Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN`, `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`, `INGEST_API_KEY`.
 
 Client (`client/.env.local`, only when the API is on another origin): `VITE_API_URL`.

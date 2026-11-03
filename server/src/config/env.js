@@ -18,6 +18,7 @@ const schema = z
     LLM_PROVIDER: z.enum(['groq', 'mock']).default('mock'),
     GROQ_API_KEY: z.string().optional(),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+    INGEST_API_KEY: z.string().min(24, 'INGEST_API_KEY must be at least 24 characters').optional(),
   })
   .superRefine((env, ctx) => {
     if (env.LLM_PROVIDER === 'groq' && !env.GROQ_API_KEY) {
