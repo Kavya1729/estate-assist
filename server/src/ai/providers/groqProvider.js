@@ -87,5 +87,21 @@ export function createGroqProvider({ apiKey, model, timeoutMs = 20_000, fetchImp
         })),
       };
     },
+
+    /** JSON mode, used for the handoff summary. Returns the parsed object. */
+    async completeJSON({ messages }) {
+      const data = await request({
+        model,
+        messages,
+        response_format: { type: 'json_object' },
+        temperature: 0,
+        max_completion_tokens: 500,
+      });
+      try {
+        return JSON.parse(data?.choices?.[0]?.message?.content ?? '');
+      } catch {
+        throw new LLMError('Groq returned invalid JSON');
+      }
+    },
   };
 }

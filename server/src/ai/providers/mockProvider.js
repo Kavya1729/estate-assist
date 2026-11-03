@@ -32,6 +32,17 @@ export function createMockProvider({ script } = {}) {
       const response = typeof step === 'function' ? step(messages) : step;
       return { content: null, toolCalls: [], ...response };
     },
+
+    /** Scripted steps are returned as the parsed JSON; the demo has no JSON mode (rules take over). */
+    async completeJSON({ messages }) {
+      calls.push(messages);
+      if (!queue) throw new LLMError('The demo provider has no JSON mode');
+
+      const step = queue.shift();
+      if (step === undefined) throw new LLMError('Mock script exhausted');
+      if (step instanceof Error) throw step;
+      return typeof step === 'function' ? step(messages) : step;
+    },
   };
 }
 

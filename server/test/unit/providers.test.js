@@ -112,6 +112,27 @@ describe('Groq provider', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it('asks for JSON mode for summaries and parses the result', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse(200, { choices: [{ message: { content: '{"needs":"3 BHK"}' } }] }),
+    );
+    const provider = createGroqProvider({ apiKey: 'k', model: 'm', fetchImpl });
+
+    await expect(provider.completeJSON({ messages })).resolves.toEqual({ needs: '3 BHK' });
+    const body = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.tools).toBeUndefined();
+  });
+
+  it('reports JSON mode output that is not JSON', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse(200, { choices: [{ message: { content: 'Sure! Here is the summary' } }] }),
+    );
+    const provider = createGroqProvider({ apiKey: 'k', model: 'm', fetchImpl });
+
+    await expect(provider.completeJSON({ messages })).rejects.toThrow(/invalid JSON/);
+  });
+
   it('refuses to start without an API key', () => {
     expect(() => createGroqProvider({ apiKey: '', model: 'm' })).toThrow(/GROQ_API_KEY/);
   });

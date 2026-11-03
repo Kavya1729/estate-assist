@@ -24,7 +24,12 @@ export const handoffToHuman = {
     .strict(),
 
   async run({ reason, summary }, { leadId, conversationId }) {
-    const { executive } = await handOffToHuman({ leadId, conversationId, reason, summary });
+    const { executive } = await handOffToHuman({
+      leadId,
+      conversationId,
+      reason,
+      summary: { ...summary, source: 'assistant' },
+    });
     return { ok: true, handedOff: true, executive: executive?.name ?? null };
   },
 };

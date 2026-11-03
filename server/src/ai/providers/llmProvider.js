@@ -14,6 +14,8 @@
  * @typedef {object} LLMProvider
  * @property {string} name
  * @property {(request: { messages: object[], tools: object[] }) => Promise<CompletionResult>} complete
+ * @property {(request: { messages: object[] }) => Promise<object>} completeJSON
+ *   JSON-mode completion without tools; resolves to the parsed object.
  */
 
 /** A provider could not produce a completion (network, quota, bad response). */

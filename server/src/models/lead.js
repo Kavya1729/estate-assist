@@ -75,6 +75,8 @@ const leadSchema = new mongoose.Schema(
         budget: { type: String, maxlength: 120 },
         questions: [{ type: String, maxlength: 300 }],
         concerns: [{ type: String, maxlength: 300 }],
+        /** `assistant`: written by the model in its tool call; `model`: JSON summary call; `rules`: fallback. */
+        source: { type: String, enum: ['assistant', 'model', 'rules'] },
       },
     },
 
