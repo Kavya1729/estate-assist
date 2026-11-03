@@ -128,5 +128,7 @@ describe('GET /api/dashboard', () => {
     const ravi = await createStaff();
     expect((await request(app).get('/api/dashboard').set(authHeader(ravi))).status).toBe(403);
     expect((await dashboard('?from=2026-02-01&to=2026-01-01')).status).toBe(400);
+    expect((await dashboard('?from=2020-01-01&to=2026-01-01')).status).toBe(400);
+    expect((await dashboard('?from=2025-01-01&to=2025-12-31')).status).toBe(200);
   });
 });

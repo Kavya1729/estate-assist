@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 import { HttpError } from '../lib/httpError.js';
 import { escapeRegex, normalizeName } from '../lib/names.js';
-import { normalizeIndianMobile } from '../lib/phone.js';
+import { maskPhone, normalizeIndianMobile } from '../lib/phone.js';
 import { Conversation, Lead, Outbox, Project, Visit } from '../models/index.js';
 import { canManageLead, leadScope } from './leadAccess.js';
 
@@ -61,7 +61,8 @@ function listItem(lead, { visit, conversation }) {
     id: idOf(lead),
     code: lead.code,
     name: lead.name ?? null,
-    phone: lead.phone ?? null,
+    // Masked in the list (personal data under DPDP); the detail screen shows it in full for calling.
+    phone: maskPhone(lead.normalizedPhone),
     primarySource: lead.primarySource,
     sourceCount: lead.sources?.length ?? 0,
     project: projectRef(lead.project),

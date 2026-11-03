@@ -58,6 +58,7 @@ describe('GET /api/leads', () => {
   it('summarises each lead for the list', async () => {
     const lead = await createLead(project, {
       name: 'Hardik Patel',
+      phone: '+91 98250-12345',
       assignedTo: ravi._id,
       profile: { bhk: 3, budgetMax: 110 * LAKH },
     });
@@ -69,6 +70,7 @@ describe('GET /api/leads', () => {
     expect(item).toMatchObject({
       code: lead.code,
       name: 'Hardik Patel',
+      phone: '98xxxxxx45',
       primarySource: 'portal',
       project: { code: 'P1', name: 'Project 1' },
       profile: { bhk: 3, budgetMax: 110 * LAKH },

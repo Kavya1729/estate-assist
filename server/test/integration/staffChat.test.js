@@ -91,6 +91,15 @@ describe('staff replies', () => {
     expect(stored.messages.some((m) => m.role === 'system' && /took over/.test(m.text))).toBe(true);
   });
 
+  it('are refused for a buyer who opted out', async () => {
+    await Lead.updateOne({ _id: lead._id }, { $set: { optedOut: true, optedOutAt: new Date() } });
+
+    const res = await post(ravi, `/api/leads/${lead.id}/messages`, { text: 'Hi, any update?' });
+
+    expect(res.status).toBe(409);
+    expect((await conversation()).messages.some((m) => m.role === 'staff')).toBe(false);
+  });
+
   it('reject empty text', async () => {
     expect((await post(ravi, `/api/leads/${lead.id}/messages`, { text: ' ' })).status).toBe(400);
   });

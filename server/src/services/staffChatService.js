@@ -40,6 +40,10 @@ export async function takeOver(user, leadId) {
 
 /** Staff reply to the buyer. Replying takes the chat over if it was still with the assistant. */
 export async function sendStaffMessage(user, leadId, text) {
+  const lead = await findManageableLead(user, leadId);
+  if (lead.optedOut) {
+    throw new HttpError(409, 'This buyer has opted out of messages. Do not contact them.');
+  }
   const conversation = await takeOver(user, leadId);
   const message = { role: 'staff', text, author: user._id, createdAt: new Date() };
   await appendMessages(conversation._id, [message]);
