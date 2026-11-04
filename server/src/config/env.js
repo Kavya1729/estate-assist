@@ -2,6 +2,8 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
+import { parseOriginList } from '../lib/origins.js';
+
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)), quiet: true });
 
 const schema = z
@@ -14,7 +16,22 @@ const schema = z
       .string()
       .regex(/^\d+[smhd]$/, 'Use a duration like 12h or 7d')
       .default('12h'),
-    CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
+    CLIENT_ORIGIN: z
+      .string()
+      .default('http://localhost:5173,http://localhost:4173')
+      .transform((value, ctx) => {
+        const { origins, invalid } = parseOriginList(value);
+        for (const entry of invalid) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `"${entry}" is not an origin like https://app.example.com (no path)`,
+          });
+        }
+        if (!origins.length && !invalid.length) {
+          ctx.addIssue({ code: 'custom', message: 'List at least one origin' });
+        }
+        return origins;
+      }),
     LLM_PROVIDER: z.enum(['groq', 'mock']).default('mock'),
     GROQ_API_KEY: z.string().optional(),
     GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),

@@ -1,7 +1,7 @@
 import express from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
 
+import { corsAllowlist } from './middleware/cors.js';
 import authRouter from './routes/auth.js';
 import chatRouter from './routes/chat.js';
 import dashboardRouter from './routes/dashboard.js';
@@ -14,15 +14,23 @@ import staffRouter from './routes/staff.js';
 import visitsRouter from './routes/visits.js';
 import { notFound, errorHandler } from './middleware/errors.js';
 
-export function createApp({ clientOrigin, trustProxy = false } = {}) {
+export function createApp({ clientOrigins = [], trustProxy = false } = {}) {
   const app = express();
 
   app.disable('x-powered-by');
   // Behind Render's proxy the client IP comes from X-Forwarded-For; needed for rate limiting.
   if (trustProxy) app.set('trust proxy', 1);
 
-  app.use(helmet());
-  app.use(cors({ origin: clientOrigin ?? false }));
+  // The API only ever returns JSON, so nothing it serves may load resources or be framed.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
+      },
+    }),
+  );
+  app.use(corsAllowlist(clientOrigins));
   app.use(express.json({ limit: '100kb' }));
 
   app.use('/api/health', healthRouter);

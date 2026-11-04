@@ -75,7 +75,7 @@ first run downloads the MongoDB binary (about 100 MB) and caches it.
 
 ## Environment variables (names only)
 
-Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN`, `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`, `INGEST_API_KEY`, `JOBS_ENABLED`, `SEED_PASSWORD`.
+Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN` (comma-separated CORS allowlist, e.g. the Vercel URL), `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`, `INGEST_API_KEY`, `JOBS_ENABLED`, `SEED_PASSWORD`.
 
 Visit reminders run inside the API process every minute (`JOBS_ENABLED=true`). They are idempotent, so
 running more than one instance is safe. On a free host that sleeps when idle, reminders that came due

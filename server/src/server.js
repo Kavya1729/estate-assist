@@ -11,7 +11,7 @@ try {
 }
 
 const app = createApp({
-  clientOrigin: env.CLIENT_ORIGIN,
+  clientOrigins: env.CLIENT_ORIGIN,
   trustProxy: env.NODE_ENV === 'production',
 });
 
