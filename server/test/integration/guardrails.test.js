@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockProvider } from '../../src/ai/providers/mockProvider.js';
-import { Conversation, Lead } from '../../src/models/index.js';
+import { Conversation, Lead, Outbox } from '../../src/models/index.js';
 import { handleBuyerMessage } from '../../src/services/conversationService.js';
 import { useTestDatabase } from '../helpers/db.js';
 import { createLead, createProject, createStaff } from '../helpers/factories.js';
@@ -53,6 +53,31 @@ describe('pre-checks', () => {
     const { handoff } = await stored();
     expect(handoff.reason).toBe('price_or_discount');
     expect(handoff.summary).toMatchObject({ ...summary, budget: null, source: 'model' });
+  });
+
+  it('hands a request for a person to the executive and the assistant then stays quiet', async () => {
+    const { reply, mode, guardrail, provider } = await send('Can I talk to a person?', [
+      { needs: 'Wants to speak to someone', budget: null, questions: [], concerns: [] },
+    ]);
+
+    expect(guardrail).toBe('pre_check:buyer_requested');
+    expect(mode).toBe('human');
+    expect(reply.text).toContain('Ravi Mehta');
+    expect(provider.calls).toHaveLength(1);
+    expect(provider.calls[0][0].content).toMatch(/handoff notes/);
+    expect((await stored()).handoff).toMatchObject({ reason: 'buyer_requested' });
+    expect(await Outbox.countDocuments({ template: 'handoff_notice' })).toBe(1);
+
+    const next = await send('Hello? Is anyone there?');
+    expect(next.reply).toBeNull();
+    expect(next.provider.calls).toHaveLength(0);
+    expect(await Outbox.countDocuments({ template: 'handoff_notice' })).toBe(1);
+  });
+
+  it('hands off a request for a person written in Hindi and keeps the language', async () => {
+    const hindi = await send('मुझे किसी इंसान से बात करनी है', [{ needs: '' }]);
+    expect(hindi.guardrail).toBe('pre_check:buyer_requested');
+    expect((await stored()).language).toBe('hi');
   });
 
   it('falls back to the rule-based summary when the JSON is unusable', async () => {

@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app.js';
 import { ROLES } from '../../src/constants/domain.js';
 import { Lead, Outbox, Slot, Visit } from '../../src/models/index.js';
-import { bookVisit } from '../../src/services/visitService.js';
+import { signBuyerToken } from '../../src/services/authService.js';
+import { bookVisit, cancelVisit } from '../../src/services/visitService.js';
 import { authHeader } from '../helpers/auth.js';
 import { useTestDatabase } from '../helpers/db.js';
 import {
@@ -152,6 +153,45 @@ describe('no double booking under concurrency', () => {
     expect(await Visit.countDocuments({ slot: slot._id, status: 'booked' })).toBe(2);
     expect(await Lead.countDocuments({ status: 'visit_booked' })).toBe(2);
     expect(await Outbox.countDocuments({ template: 'visit_confirmation' })).toBe(2);
+  });
+
+  it('holds over HTTP when twenty buyers pick the same two-seat slot in the chat', async () => {
+    const slot = await createSlot(project, { capacity: 2 });
+    const leads = await Promise.all(Array.from({ length: 20 }, () => createLead(project)));
+
+    const responses = await Promise.all(
+      leads.map((lead) =>
+        request(app)
+          .post('/api/chat/visit')
+          .set('Authorization', `Bearer ${signBuyerToken(lead)}`)
+          .send({ slotId: slot.id }),
+      ),
+    );
+
+    const statuses = responses.map((r) => r.status);
+    expect(statuses.filter((s) => s === 201)).toHaveLength(2);
+    expect(statuses.filter((s) => s === 409)).toHaveLength(18);
+    expect(responses.find((r) => r.status === 409).body.error).toMatch(/just taken/);
+    expect((await Slot.findById(slot.id)).bookedCount).toBe(2);
+    expect(await Visit.countDocuments({ status: 'booked' })).toBe(2);
+  });
+
+  it('keeps the seat count exact when cancellations and bookings race', async () => {
+    const slot = await createSlot(project, { capacity: 1 });
+    const first = await createLead(project);
+    const visit = await bookVisit({ leadId: first._id, slotId: slot._id, bookedVia: 'assistant' });
+    const others = await Promise.all(Array.from({ length: 6 }, () => createLead(project)));
+
+    await Promise.allSettled([
+      cancelVisit({ visitId: visit._id }),
+      ...others.map((lead) =>
+        bookVisit({ leadId: lead._id, slotId: slot._id, bookedVia: 'assistant' }),
+      ),
+    ]);
+
+    const booked = await Visit.countDocuments({ slot: slot._id, status: 'booked' });
+    expect(booked).toBeLessThanOrEqual(1);
+    expect((await Slot.findById(slot._id)).bookedCount).toBe(booked);
   });
 
   it('gives one buyer clicking several slots at once only one visit', async () => {
