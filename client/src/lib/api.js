@@ -10,6 +10,15 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Fire-and-forget ping so a sleeping free-tier API starts waking up while the
+ * visitor is still reading the page, instead of on their first real request.
+ */
+export function wakeApi() {
+  if (!BASE_URL) return;
+  fetch(`${BASE_URL}/api/health`).catch(() => {});
+}
+
 export async function api(path, { method = 'GET', body, headers, signal } = {}) {
   const timeout = AbortSignal.timeout(DEFAULT_TIMEOUT_MS);
 

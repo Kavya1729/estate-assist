@@ -4,6 +4,9 @@ import '@fontsource-variable/inter';
 import '@fontsource-variable/fraunces';
 import './index.css';
 import App from './App.jsx';
+import { wakeApi } from './lib/api.js';
+
+wakeApi();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
