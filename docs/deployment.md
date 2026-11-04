@@ -70,8 +70,8 @@ a dashboard; the repository only holds variable names (`render.yaml`, `.env.exam
 
 Live URLs:
 
-- Web app: `https://<vercel-project>.vercel.app`
-- API health: `https://<render-service>.onrender.com/api/health`
+- Web app: https://estate-assist.vercel.app (staff console at `/staff/login`)
+- API health: https://estate-assist-api.onrender.com/api/health
 
 ### 1. Atlas: a database for the live app
 

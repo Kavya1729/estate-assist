@@ -62,4 +62,13 @@ executives, and 60 leads, including the brief's sample rows (Hardik Patel `LD-58
 
 Every account uses the password in `SEED_PASSWORD` (default `Demo@12345`).
 
+## Live demo
+
+- Buyer site: https://estate-assist.vercel.app
+- Staff console: https://estate-assist.vercel.app/staff/login (logins above)
+- API health: https://estate-assist-api.onrender.com/api/health
+
+The API is on Render's free plan and sleeps when idle; the first request after a pause can take up
+to a minute.
+
 Setup and deployment steps (Atlas, Render via `render.yaml`, Vercel) live in `docs/deployment.md`.
