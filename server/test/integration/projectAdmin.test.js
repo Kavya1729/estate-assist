@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { getFacts } from '../../src/ai/tools/getFacts.js';
 import { createApp } from '../../src/app.js';
 import { ROLES } from '../../src/constants/domain.js';
 import { addDays, istDateOf } from '../../src/lib/time.js';
@@ -57,6 +58,24 @@ describe('fact sheet', () => {
       ],
     });
     expect(badRange.status).toBe(400);
+  });
+
+  it('reaches the assistant on its next lookup, with no restart or cache', async () => {
+    const lead = await createLead(project);
+    await send('patch', head, '/api/projects/P1', { facts, tagline: 'Homes off SG Highway' });
+
+    const { projects } = await getFacts.run({}, { leadId: lead._id });
+
+    expect(projects[0]).toMatchObject({ tagline: 'Homes off SG Highway', facts });
+  });
+
+  it('takes a closed project off the website and out of the assistant', async () => {
+    const lead = await createLead(project);
+    await send('patch', head, '/api/projects/P1', { isActive: false });
+
+    expect((await request(app).get('/api/projects/catalog')).body.items).toHaveLength(0);
+    expect((await request(app).get('/api/projects/P1/slots')).status).toBe(404);
+    expect(await getFacts.run({}, { leadId: lead._id })).toMatchObject({ ok: false });
   });
 
   it('is read-only for executives', async () => {

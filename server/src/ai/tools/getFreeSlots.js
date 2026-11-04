@@ -31,14 +31,16 @@ export const getFreeSlots = {
     const lead = await Lead.findById(leadId).select('project language').lean();
     const project = projectCode
       ? await Project.findOne({ code: projectCode, isActive: true }).lean()
-      : lead.project && (await Project.findById(lead.project).lean());
+      : lead.project && (await Project.findOne({ _id: lead.project, isActive: true }).lean());
 
     if (!project) {
       return {
         ok: false,
         error: projectCode
           ? `No project with code ${projectCode}.`
-          : 'The project is not known yet. Ask the buyer which project they want to visit.',
+          : lead.project
+            ? 'Site visits for this project are paused. Hand the buyer to a person.'
+            : 'The project is not known yet. Ask the buyer which project they want to visit.',
       };
     }
 

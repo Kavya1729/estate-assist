@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { getFreeSlots } from '../../src/ai/tools/getFreeSlots.js';
 import { createApp } from '../../src/app.js';
 import { ROLES } from '../../src/constants/domain.js';
 import { Lead, Outbox, Slot, Visit } from '../../src/models/index.js';
@@ -121,6 +122,24 @@ describe('POST /api/visits', () => {
 
     const invalid = await book(head, { leadId: 'abc', slotId: '' });
     expect(invalid.status).toBe(400);
+  });
+
+  it('takes no buyer bookings for a project closed for enquiries; staff can still book', async () => {
+    await project.updateOne({ isActive: false });
+    const buyer = await createLead(project);
+    const lead = await createLead(project, { assignedTo: executive._id });
+    const slot = await createSlot(project);
+
+    const offered = await getFreeSlots.run({}, { leadId: buyer._id });
+    expect(offered).toMatchObject({ ok: false, error: expect.stringMatching(/paused/) });
+
+    // Without an actor, as the chat's slot picker and the assistant book.
+    await expect(
+      bookVisit({ leadId: buyer._id, slotId: slot._id, bookedVia: 'assistant' }),
+    ).rejects.toMatchObject({ status: 409, message: expect.stringMatching(/paused/) });
+
+    expect((await book(executive, { leadId: lead.id, slotId: slot.id })).status).toBe(201);
+    expect((await Slot.findById(slot.id)).bookedCount).toBe(1);
   });
 
   it('suppresses the confirmation for a buyer who opted out', async () => {

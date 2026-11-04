@@ -10,6 +10,7 @@ import { BOOKING_CUTOFF_MINUTES, bookableSlotFilter, bookingCutoff } from './slo
 
 const SLOT_TAKEN = 'That time was just taken. Please pick another slot.';
 const ALREADY_BOOKED = 'This buyer already has a visit booked. Reschedule it instead.';
+const PROJECT_CLOSED = 'Site visits for this project are paused. The sales team will contact you.';
 
 function isActiveVisitConflict(err) {
   return err?.code === 11000 && err.keyPattern?.lead === 1;
@@ -37,13 +38,17 @@ async function loadBookedVisit(visitId, actor, session) {
  * is atomic in MongoDB, so two buyers racing for the last seat cannot both win.
  * The checks before it only exist to give a precise error message.
  */
-async function claimSeat(slotId, lead, session) {
+async function claimSeat(slotId, lead, session, { byStaff = false } = {}) {
   const slot = await Slot.findById(slotId).session(session);
   if (!slot) throw new HttpError(404, 'Slot not found.');
   if (lead.project && !lead.project.equals(slot.project)) {
     throw new HttpError(400, 'That slot is for a different project.');
   }
   if (slot.isBlocked) throw new HttpError(409, 'That slot is no longer available.');
+  // A project closed for enquiries takes no new visits from buyers; staff can still book by hand.
+  if (!byStaff && !(await Project.exists({ _id: slot.project, isActive: true }).session(session))) {
+    throw new HttpError(409, PROJECT_CLOSED);
+  }
   if (slot.startsAt < bookingCutoff()) {
     throw new HttpError(
       400,
@@ -125,7 +130,7 @@ async function inTransaction(work) {
 export function bookVisit({ leadId, slotId, bookedVia, actor = null }) {
   return inTransaction(async (session) => {
     const lead = await loadLead(leadId, actor, session);
-    const slot = await claimSeat(slotId, lead, session);
+    const slot = await claimSeat(slotId, lead, session, { byStaff: Boolean(actor) });
     return createVisit({ lead, slot, bookedVia }, session);
   });
 }
@@ -161,7 +166,7 @@ export function rescheduleVisit({ visitId, slotId, bookedVia, actor = null }) {
     await visit.save({ session });
     await releaseSeat(visit.slot, session);
 
-    const slot = await claimSeat(slotId, lead, session);
+    const slot = await claimSeat(slotId, lead, session, { byStaff: Boolean(actor) });
     return createVisit({ lead, slot, bookedVia }, session);
   });
 }
