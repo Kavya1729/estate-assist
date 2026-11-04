@@ -96,7 +96,7 @@ export function LeadHeader({ lead, executives, now, onChanged }) {
           </a>
         )}
         <span className="text-muted-foreground">
-          {lead.code} · came in {formatRelative(lead.firstInboundAt ?? lead.createdAt, now)}
+          {lead.code} · first enquiry {formatRelative(lead.firstInboundAt ?? lead.createdAt, now)}
         </span>
       </div>
 
