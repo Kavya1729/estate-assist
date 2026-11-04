@@ -160,5 +160,53 @@ describe('mock provider', () => {
     expect(await ask('I want 2 BHK under 80 lakh')).toBe('update_lead_profile');
     expect(await ask('Any discount?')).toBe('handoff_to_human');
     expect(await ask('Please ask someone to call me')).toBe('handoff_to_human');
+    expect(await ask('is there a swimming pool?')).toBe('get_facts');
+  });
+
+  it('answers the topic the buyer asked about from the fact sheet', async () => {
+    const provider = createMockProvider();
+    const project = (name, amenities) => ({
+      name,
+      location: 'Ahmedabad',
+      configurations: [],
+      facts: [{ label: 'Amenities', value: amenities }],
+    });
+    const { content } = await provider.complete({
+      messages: [
+        { role: 'user', content: 'is there a swimming pool?' },
+        {
+          role: 'assistant',
+          content: null,
+          tool_calls: [{ id: 't1', function: { name: 'get_facts' } }],
+        },
+        {
+          role: 'tool',
+          tool_call_id: 't1',
+          content: JSON.stringify({
+            ok: true,
+            projects: [
+              project('Project 1', 'Clubhouse, swimming pool, gym.'),
+              project('Project 2', 'There is no swimming pool.'),
+            ],
+          }),
+        },
+      ],
+    });
+
+    expect(content).toContain('Project 1: Clubhouse, swimming pool, gym.');
+    expect(content).toContain('Project 2: There is no swimming pool.');
+  });
+
+  it('does not greet again when it cannot follow the buyer', async () => {
+    const provider = createMockProvider();
+    const { content } = await provider.complete({
+      messages: [
+        { role: 'assistant', content: 'Hi! How can I help?' },
+        { role: 'user', content: 'hmm okay' },
+      ],
+    });
+
+    expect(content).not.toMatch(/^Hi!/);
+    expect(content).toMatch(/Talk to a person/);
   });
 });

@@ -57,6 +57,65 @@ const PATTERNS = {
     /\b(price|cost|rate|kitn|amenit|possession|rera|location|where|size|carpet|bhk|project|parking|loan)/i,
 };
 
+/** Fact-sheet topics the demo can answer, matched to the sales head's fact labels. */
+const TOPICS = [
+  {
+    ask: /swim|pool|gym|club|garden|lawn|\bplay|amenit|facilit|sport|jogging|पूल|स्विमिंग|જિમ|પૂલ|સ્વિમિંગ/i,
+    label: /amenit/i,
+  },
+  { ask: /parking|car\b|garage/i, label: /parking/i },
+  {
+    ask: /possession|handover|ready|construction|complete/i,
+    label: /construction/i,
+    field: 'possession',
+  },
+  {
+    ask: /location|where|address|distance|metro|airport|school|connect|kahan|kaha/i,
+    label: /connect/i,
+    field: 'location',
+  },
+  { ask: /loan|bank|emi\b/i, label: /loan/i },
+  { ask: /payment|instal|plan\b|down ?payment/i, label: /payment/i },
+  { ask: /water|power|electric|backup/i, label: /water|power/i },
+  { ask: /vastu/i, label: /vastu/i },
+  { ask: /tower|floor|storey|lift/i, label: /tower/i },
+  { ask: /site office|office|timing/i, label: /site office/i },
+  { ask: /rera/i, field: 'reraNumber' },
+];
+
+const topicOf = (text) => TOPICS.find((topic) => topic.ask.test(text ?? ''));
+
+const lastBuyerText = (messages) => messages.findLast((m) => m.role === 'user')?.content ?? '';
+
+function describeTopic(project, topic) {
+  const fact = topic.label && project.facts?.find((f) => topic.label.test(f.label));
+  const parts = [];
+  if (topic.field === 'possession' && project.possession)
+    parts.push(`Possession is ${project.possession}.`);
+  if (topic.field === 'location') parts.push(`It is at ${project.location}.`);
+  if (topic.field === 'reraNumber') parts.push(`RERA number: ${project.reraNumber}.`);
+  if (fact) parts.push(fact.value);
+  return parts.length ? `${project.name}: ${parts.join(' ')}` : null;
+}
+
+function factsReply(messages, result) {
+  const topic = topicOf(lastBuyerText(messages));
+  if (topic) {
+    const answers = result.projects.map((p) => describeTopic(p, topic)).filter(Boolean);
+    if (answers.length) return `${answers.join('\n')}\nWould you like to see it on a site visit?`;
+    return "I don't have that detail in our fact sheet yet. Shall I connect you with our sales team?";
+  }
+  return result.projects
+    .map((project) => {
+      const prices = project.configurations
+        .map((c) => `${c.bhk} BHK (${c.carpetAreaSqft}) at ${c.priceRange}`)
+        .join(', ');
+      return `${project.name} has ${prices}.`;
+    })
+    .concat('Would you like to book a site visit?')
+    .join('\n');
+}
+
 function lastToolResult(messages, name) {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i];
@@ -81,13 +140,8 @@ function replyToTool(messages) {
   if (result.error) return `Sorry, ${result.error}`;
 
   switch (call?.function?.name) {
-    case 'get_facts': {
-      const [project] = result.projects;
-      const prices = project.configurations
-        .map((c) => `${c.bhk} BHK at ${c.priceRange}`)
-        .join(', ');
-      return `${project.name} has ${prices}. Would you like to book a site visit?`;
-    }
+    case 'get_facts':
+      return factsReply(messages, result);
     case 'update_lead_profile':
       return 'Noted, thank you. Shall I show you free site-visit slots?';
     case 'get_free_slots':
@@ -136,11 +190,13 @@ function demoResponse(messages, toolCall) {
       budgetMax: Math.round(Number(budget[1]) * unit),
     });
   }
-  if (PATTERNS.facts.test(text)) return toolCall('get_facts', {});
+  if (topicOf(text) || PATTERNS.facts.test(text)) return toolCall('get_facts', {});
 
+  const greeted = messages.some((m) => m.role === 'assistant' && m.content);
   return {
-    content:
-      'Hi! I can share prices, sizes, amenities and possession dates, and book a site visit for you. What are you looking for?',
+    content: greeted
+      ? "Sorry, I didn't follow that. I can tell you about prices, sizes, amenities, parking, possession, location and home loans, or book a site visit. You can also tap 'Talk to a person'."
+      : 'Hi! I can share prices, sizes, amenities and possession dates, and book a site visit for you. What are you looking for?',
     toolCalls: [],
   };
 }
