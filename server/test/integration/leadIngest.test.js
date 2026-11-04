@@ -158,6 +158,21 @@ describe('creating and merging leads', () => {
     expect(res.body.lead.id).toBe(phoneless.id);
   });
 
+  it('prefers the phone match over an email match on another lead', async () => {
+    const byPhone = await ingest('portal', { name: 'Nidhi Shah', phone: '9727012345' });
+    const byEmail = await Lead.create({
+      name: 'Ketan Shah',
+      email: 'shah@example.com',
+      primarySource: 'website',
+    });
+
+    const res = await ingest('social_ad', { phone: '+91 97270 12345', email: 'shah@example.com' });
+
+    expect(res.body).toMatchObject({ outcome: 'merged', matchedBy: 'phone' });
+    expect(res.body.lead.id).toBe(byPhone.body.lead.id);
+    expect((await Lead.findById(byEmail.id)).normalizedPhone).toBeFalsy();
+  });
+
   it('merges by email when the stored lead has no phone', async () => {
     const first = await ingest('website', { name: 'Nidhi Shah', email: 'nidhi@example.com' });
 
