@@ -1,9 +1,11 @@
+import { FACT_SHEETS } from './factSheets.js';
+
 const LAKH = 100_000;
 
 /**
  * The two live projects from the brief: 420 apartments in all, 2 and 3 BHK,
- * ₹65 lakh to ₹1.2 crore. RERA numbers, addresses and facts are made up but
- * follow the Gujarat RERA format.
+ * ₹65 lakh to ₹1.2 crore. RERA numbers and addresses are made up but follow the
+ * Gujarat RERA format. Fact sheets live in factSheets.js.
  */
 export const PROJECTS = [
   {
@@ -31,66 +33,7 @@ export const PROJECTS = [
       },
     ],
     possessionDate: new Date('2027-12-31T00:00:00+05:30'),
-    facts: [
-      {
-        key: 'towers',
-        label: 'Towers',
-        value: '4 towers of 14 floors, 240 apartments in all',
-      },
-      {
-        key: 'amenities',
-        label: 'Amenities',
-        value:
-          'Clubhouse, swimming pool, gym, kids’ play area, jogging track, indoor games room and a multipurpose hall',
-      },
-      {
-        key: 'parking',
-        label: 'Parking',
-        value:
-          'One covered car park with every 2 BHK and two with every 3 BHK; visitor parking at ground level',
-      },
-      {
-        key: 'construction_status',
-        label: 'Construction status',
-        value: 'Towers A and B are built up to the 9th floor; Towers C and D up to the 5th floor',
-      },
-      {
-        key: 'home_loans',
-        label: 'Home loans',
-        value: 'Approved by SBI, HDFC Bank, ICICI Bank and Bank of Baroda',
-      },
-      {
-        key: 'payment_plan',
-        label: 'Payment plan',
-        value: 'Construction-linked: 10% on booking, the rest in stages as construction progresses',
-      },
-      {
-        key: 'price_note',
-        label: 'About prices',
-        value:
-          'Prices are base prices. GST, stamp duty and registration are extra. The sales team confirms the final price for a specific apartment.',
-      },
-      {
-        key: 'water_power',
-        label: 'Water and power',
-        value: '24-hour Narmada water supply; power backup for lifts and common areas',
-      },
-      {
-        key: 'vastu',
-        label: 'Vastu',
-        value: 'Every apartment is east or north facing',
-      },
-      {
-        key: 'connectivity',
-        label: 'Connectivity',
-        value: '2 km from Vaishnodevi Circle on SG Highway; schools and hospitals within 3 km',
-      },
-      {
-        key: 'site_office',
-        label: 'Site office',
-        value: 'Open every day from 10 am to 7 pm, including Sundays, with a sample flat to see',
-      },
-    ],
+    facts: FACT_SHEETS.P1,
   },
   {
     code: 'P2',
@@ -117,61 +60,6 @@ export const PROJECTS = [
       },
     ],
     possessionDate: new Date('2027-06-30T00:00:00+05:30'),
-    facts: [
-      {
-        key: 'towers',
-        label: 'Towers',
-        value: '3 towers of 12 floors, 180 apartments in all',
-      },
-      {
-        key: 'amenities',
-        label: 'Amenities',
-        value:
-          'Clubhouse, gym, landscaped garden, kids’ play area, senior citizens’ sit-out and a party lawn. There is no swimming pool.',
-      },
-      {
-        key: 'parking',
-        label: 'Parking',
-        value:
-          'One covered car park with every apartment; extra parking on request, subject to availability',
-      },
-      {
-        key: 'construction_status',
-        label: 'Construction status',
-        value: 'All 3 towers are structurally complete; finishing work is in progress',
-      },
-      {
-        key: 'home_loans',
-        label: 'Home loans',
-        value: 'Approved by SBI, HDFC Bank, Axis Bank and Kotak Mahindra Bank',
-      },
-      {
-        key: 'payment_plan',
-        label: 'Payment plan',
-        value: 'Construction-linked: 10% on booking, the rest in stages up to possession',
-      },
-      {
-        key: 'price_note',
-        label: 'About prices',
-        value:
-          'Prices are base prices. GST, stamp duty and registration are extra. The sales team confirms the final price for a specific apartment.',
-      },
-      {
-        key: 'water_power',
-        label: 'Water and power',
-        value:
-          '24-hour water supply from borewell and AUDA lines; power backup for lifts and common areas',
-      },
-      {
-        key: 'connectivity',
-        label: 'Connectivity',
-        value: '10 minutes to SP Ring Road; schools, a hospital and a supermarket within 2 km',
-      },
-      {
-        key: 'site_office',
-        label: 'Site office',
-        value: 'Open every day from 10 am to 7 pm, including Sundays, with a sample flat to see',
-      },
-    ],
+    facts: FACT_SHEETS.P2,
   },
 ];

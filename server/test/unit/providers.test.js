@@ -161,52 +161,90 @@ describe('mock provider', () => {
     expect(await ask('Any discount?')).toBe('handoff_to_human');
     expect(await ask('Please ask someone to call me')).toBe('handoff_to_human');
     expect(await ask('is there a swimming pool?')).toBe('get_facts');
+    expect(await ask('who won the cricket match yesterday?')).toBe('get_facts');
+    expect(await ask('how do I book a flat?')).toBe('get_facts');
   });
 
-  it('answers the topic the buyer asked about from the fact sheet', async () => {
-    const provider = createMockProvider();
-    const project = (name, amenities) => ({
-      name,
-      location: 'Ahmedabad',
-      configurations: [],
-      facts: [{ label: 'Amenities', value: amenities }],
+  describe('demo answers', () => {
+    const project = (name, facts) => ({ name, location: 'Ahmedabad', configurations: [], facts });
+    const projects = [
+      project('Project 1', [
+        { key: 'amenities', label: 'Amenities', value: 'Clubhouse, swimming pool, gym.' },
+      ]),
+      project('Project 2', [
+        { key: 'amenities', label: 'Amenities', value: 'There is no swimming pool.' },
+      ]),
+    ];
+    const factsTurn = (question, system = 'Their saved preference is English.') => [
+      { role: 'system', content: system },
+      { role: 'user', content: question },
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [{ id: 't1', function: { name: 'get_facts' } }],
+      },
+      { role: 'tool', tool_call_id: 't1', content: JSON.stringify({ ok: true, projects }) },
+    ];
+
+    it('answers from each project fact sheet', async () => {
+      const { content } = await createMockProvider().complete({
+        messages: factsTurn('is there a swimming pool?'),
+      });
+
+      expect(content).toContain('Project 1: Clubhouse, swimming pool, gym.');
+      expect(content).toContain('Project 2: There is no swimming pool.');
     });
-    const { content } = await provider.complete({
-      messages: [
-        { role: 'user', content: 'is there a swimming pool?' },
-        {
-          role: 'assistant',
-          content: null,
-          tool_calls: [{ id: 't1', function: { name: 'get_facts' } }],
-        },
-        {
-          role: 'tool',
-          tool_call_id: 't1',
-          content: JSON.stringify({
-            ok: true,
-            projects: [
-              project('Project 1', 'Clubhouse, swimming pool, gym.'),
-              project('Project 2', 'There is no swimming pool.'),
+
+    it('hands off with missing_fact when the fact sheet does not cover the question', async () => {
+      const provider = createMockProvider();
+      const messages = factsTurn('who won the cricket match yesterday?');
+      const step = await provider.complete({ messages });
+
+      expect(step.toolCalls[0].name).toBe('handoff_to_human');
+      const args = JSON.parse(step.toolCalls[0].arguments);
+      expect(args.reason).toBe('missing_fact');
+
+      const { content } = await provider.complete({
+        messages: [
+          ...messages,
+          {
+            role: 'assistant',
+            content: null,
+            tool_calls: [
+              {
+                id: 't2',
+                function: { name: 'handoff_to_human', arguments: step.toolCalls[0].arguments },
+              },
             ],
-          }),
-        },
-      ],
+          },
+          {
+            role: 'tool',
+            tool_call_id: 't2',
+            content: JSON.stringify({ ok: true, executive: 'Pooja' }),
+          },
+        ],
+      });
+      expect(content).toBe(
+        "I don't have confirmed details on that. Pooja from our sales team will connect with you shortly.",
+      );
     });
 
-    expect(content).toContain('Project 1: Clubhouse, swimming pool, gym.');
-    expect(content).toContain('Project 2: There is no swimming pool.');
-  });
+    it('writes its own sentences in the buyer language', async () => {
+      const { content } = await createMockProvider().complete({
+        messages: factsTurn('pool hai kya?', 'Their saved preference is Hindi.'),
+      });
 
-  it('does not greet again when it cannot follow the buyer', async () => {
-    const provider = createMockProvider();
-    const { content } = await provider.complete({
-      messages: [
-        { role: 'assistant', content: 'Hi! How can I help?' },
-        { role: 'user', content: 'hmm okay' },
-      ],
+      expect(content).toContain('Project 1: Clubhouse, swimming pool, gym.');
+      expect(content).toContain('साइट विज़िट');
     });
 
-    expect(content).not.toMatch(/^Hi!/);
-    expect(content).toMatch(/Talk to a person/);
+    it('replies to greetings and thanks without tools', async () => {
+      const provider = createMockProvider();
+      const say = (content) => provider.complete({ messages: [{ role: 'user', content }] });
+
+      expect((await say('hello')).content).toMatch(/^Hi! I can help/);
+      expect((await say('ok thanks')).toolCalls).toEqual([]);
+      expect((await say('no swimming pool?')).toolCalls[0].name).toBe('get_facts');
+    });
   });
 });

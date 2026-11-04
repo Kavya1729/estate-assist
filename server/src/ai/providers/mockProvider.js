@@ -1,11 +1,14 @@
+import { answerFromProject } from '../factSearch.js';
 import { LLMError } from './llmProvider.js';
 
 /**
  * Two uses:
  * - `script`: tests queue exact responses (or functions of the messages) to
  *   drive the agent loop deterministically.
- * - No script: a keyword-based stand-in for the demo without a Groq key. It is
- *   not meant to be clever, only to exercise every tool end to end.
+ * - No script: a rule-based stand-in for the demo without a Groq key. It uses
+ *   the same tools and rules as the model: answers come only from get_facts
+ *   (matched with factSearch), and anything the fact sheet does not cover is
+ *   handed to a sales executive with reason missing_fact.
  *
  * @returns {import('./llmProvider.js').LLMProvider & { calls: object[][] }}
  */
@@ -50,71 +53,74 @@ const PATTERNS = {
   human: /\b(human|person|agent|executive|someone|call me|talk to|baat)\b/i,
   discount: /\b(discount|offer|negotiat|best price|deal)\b/i,
   pick: /^\s*(?:book\s*)?(?:slot\s*)?#?([1-8])\s*$/i,
-  visit: /\b(visit|slot|book|available|appointment|schedule|kab)\b/i,
+  bookingQuestion: /how (to|do i|can i) (book|buy)|booking (process|amount)/i,
+  visit: /\b(site visit|visit|slots?|appointment|schedule)\b|\bbook\b/i,
   bhk: /\b([1-6])\s*bhk\b/i,
   budget: /(\d+(?:\.\d+)?)\s*(lakh|lac|l|cr|crore)\b/i,
-  facts:
-    /\b(price|cost|rate|kitn|amenit|possession|rera|location|where|size|carpet|bhk|project|parking|loan)/i,
+  project: /\b(?:project\s*|p)([12])\b/i,
+  greeting:
+    /^(hi+|hello|hey|hii+|namaste|namaskar|kem cho|good (morning|afternoon|evening)|नमस्ते|नमस्कार|નમસ્તે|કેમ છો)\b/iu,
+  thanks:
+    /^((thanks?|thank you|ty|ok(ay)?|k|hmm+|cool|great|nice|fine|got it|sure|alright|not now|so much|a lot|ji|sir|madam|dhanyavad|shukriya|aabhar|धन्यवाद|शुक्रिया|ठीक है|આભાર|ઠીક છે)[\s,!.]*){1,4}$/iu,
 };
 
-/** Fact-sheet topics the demo can answer, matched to the sales head's fact labels. */
-const TOPICS = [
-  {
-    ask: /swim|pool|gym|club|garden|lawn|\bplay|amenit|facilit|sport|jogging|पूल|स्विमिंग|જિમ|પૂલ|સ્વિમિંગ/i,
-    label: /amenit/i,
-  },
-  { ask: /parking|car\b|garage/i, label: /parking/i },
-  {
-    ask: /possession|handover|ready|construction|complete/i,
-    label: /construction/i,
-    field: 'possession',
-  },
-  {
-    ask: /location|where|address|distance|metro|airport|school|connect|kahan|kaha/i,
-    label: /connect/i,
-    field: 'location',
-  },
-  { ask: /loan|bank|emi\b/i, label: /loan/i },
-  { ask: /payment|instal|plan\b|down ?payment/i, label: /payment/i },
-  { ask: /water|power|electric|backup/i, label: /water|power/i },
-  { ask: /vastu/i, label: /vastu/i },
-  { ask: /tower|floor|storey|lift/i, label: /tower/i },
-  { ask: /site office|office|timing/i, label: /site office/i },
-  { ask: /rera/i, field: 'reraNumber' },
-];
+const SMALL_TALK_MAX_WORDS = 4;
 
-const topicOf = (text) => TOPICS.find((topic) => topic.ask.test(text ?? ''));
+/** The demo's own sentences in the buyer's language; fact values stay as the sales head wrote them. */
+const COPY = {
+  en: {
+    greeting:
+      'Hi! I can help with prices, sizes, amenities, specifications, location and site visits for our projects. What would you like to know?',
+    thanks:
+      'You are welcome! Ask me anything about the homes, or tap the calendar to book a site visit.',
+    closing: 'Would you like to book a site visit to see it?',
+    team: (executive) => (executive ? `${executive} from our sales team` : 'Our sales executive'),
+    missingFact: (who) =>
+      `I don't have confirmed details on that. ${who} will connect with you shortly.`,
+    requested: (who) => `${who} will call you shortly.`,
+    discount: (who) =>
+      `Prices and offers are confirmed by our sales team. ${who} will connect with you shortly.`,
+  },
+  hi: {
+    greeting:
+      'नमस्ते! मैं हमारे प्रोजेक्ट्स की कीमत, साइज़, सुविधाएँ, स्पेसिफिकेशन, लोकेशन और साइट विज़िट के बारे में मदद कर सकता हूँ। आप क्या जानना चाहेंगे?',
+    thanks: 'धन्यवाद! घरों के बारे में कुछ भी पूछिए, या साइट विज़िट बुक कीजिए।',
+    closing: 'क्या आप इसे देखने के लिए साइट विज़िट बुक करना चाहेंगे?',
+    team: (executive) =>
+      executive ? `हमारी सेल्स टीम से ${executive}` : 'हमारे सेल्स एग्जीक्यूटिव',
+    missingFact: (who) => `इसकी पक्की जानकारी मेरे पास नहीं है। ${who} जल्द ही आपसे संपर्क करेंगे।`,
+    requested: (who) => `${who} जल्द ही आपको कॉल करेंगे।`,
+    discount: (who) =>
+      `कीमत और ऑफ़र हमारी सेल्स टीम ही तय करती है। ${who} जल्द ही आपसे संपर्क करेंगे।`,
+  },
+  gu: {
+    greeting:
+      'નમસ્તે! હું અમારા પ્રોજેક્ટ્સની કિંમત, સાઇઝ, સુવિધાઓ, સ્પેસિફિકેશન, લોકેશન અને સાઇટ વિઝિટ વિશે મદદ કરી શકું છું. તમે શું જાણવા માંગો છો?',
+    thanks: 'આભાર! ઘરો વિશે કંઈ પણ પૂછો, અથવા સાઇટ વિઝિટ બુક કરો.',
+    closing: 'શું તમે તે જોવા માટે સાઇટ વિઝિટ બુક કરવા માંગો છો?',
+    team: (executive) =>
+      executive ? `અમારી સેલ્સ ટીમમાંથી ${executive}` : 'અમારા સેલ્સ એક્ઝિક્યુટિવ',
+    missingFact: (who) => `આની પાકી માહિતી મારી પાસે નથી. ${who} ટૂંક સમયમાં તમારો સંપર્ક કરશે.`,
+    requested: (who) => `${who} ટૂંક સમયમાં તમને કૉલ કરશે.`,
+    discount: (who) =>
+      `કિંમત અને ઓફર અમારી સેલ્સ ટીમ જ નક્કી કરે છે. ${who} ટૂંક સમયમાં તમારો સંપર્ક કરશે.`,
+  },
+};
 
 const lastBuyerText = (messages) => messages.findLast((m) => m.role === 'user')?.content ?? '';
 
-function describeTopic(project, topic) {
-  const fact = topic.label && project.facts?.find((f) => topic.label.test(f.label));
-  const parts = [];
-  if (topic.field === 'possession' && project.possession)
-    parts.push(`Possession is ${project.possession}.`);
-  if (topic.field === 'location') parts.push(`It is at ${project.location}.`);
-  if (topic.field === 'reraNumber') parts.push(`RERA number: ${project.reraNumber}.`);
-  if (fact) parts.push(fact.value);
-  return parts.length ? `${project.name}: ${parts.join(' ')}` : null;
+/** The script the buyer writes in wins; otherwise the saved preference from the system prompt. */
+function languageOf(messages) {
+  const text = lastBuyerText(messages);
+  if (/[\u0A80-\u0AFF]/u.test(text)) return 'gu';
+  if (/[\u0900-\u097F]/u.test(text)) return 'hi';
+  const system = messages.find((m) => m.role === 'system')?.content ?? '';
+  const saved = system.match(/saved preference is (English|Hindi|Gujarati)/)?.[1];
+  return { Hindi: 'hi', Gujarati: 'gu' }[saved] ?? 'en';
 }
 
-function factsReply(messages, result) {
-  const topic = topicOf(lastBuyerText(messages));
-  if (topic) {
-    const answers = result.projects.map((p) => describeTopic(p, topic)).filter(Boolean);
-    if (answers.length) return `${answers.join('\n')}\nWould you like to see it on a site visit?`;
-    return "I don't have that detail in our fact sheet yet. Shall I connect you with our sales team?";
-  }
-  return result.projects
-    .map((project) => {
-      const prices = project.configurations
-        .map((c) => `${c.bhk} BHK (${c.carpetAreaSqft}) at ${c.priceRange}`)
-        .join(', ');
-      return `${project.name} has ${prices}.`;
-    })
-    .concat('Would you like to book a site visit?')
-    .join('\n');
-}
+const isSmallTalk = (text, pattern) =>
+  pattern.test(text.trim()) && text.trim().split(/\s+/).length <= SMALL_TALK_MAX_WORDS;
 
 function lastToolResult(messages, name) {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -130,56 +136,91 @@ function lastToolResult(messages, name) {
   return null;
 }
 
-function replyToTool(messages) {
+/** Fact-sheet answer for each project, or a handoff when the sheet does not cover the question. */
+function answerFacts(messages, result, toolCall) {
+  const question = lastBuyerText(messages);
+  const answers = result.projects
+    .map((project) => ({ project, parts: answerFromProject(question, project) }))
+    .filter(({ parts }) => parts.length)
+    .map(({ project, parts }) => `${project.name}: ${parts.join(' ')}`);
+
+  if (!answers.length) {
+    return toolCall('handoff_to_human', {
+      reason: 'missing_fact',
+      summary: { needs: question.slice(0, 500), questions: [question.slice(0, 300)] },
+    });
+  }
+  const copy = COPY[languageOf(messages)];
+  return { content: [...answers, copy.closing].join('\n'), toolCalls: [] };
+}
+
+function handoffReply(messages, call, result) {
+  const copy = COPY[languageOf(messages)];
+  const who = copy.team(result.executive);
+  const { reason } = JSON.parse(call.function.arguments || '{}');
+  if (reason === 'missing_fact') return copy.missingFact(who);
+  if (reason === 'price_or_discount') return copy.discount(who);
+  return copy.requested(who);
+}
+
+function replyToTool(messages, toolCall) {
   const resultMessage = messages.at(-1);
   const call = messages
     .flatMap((m) => m.tool_calls ?? [])
     .find((c) => c.id === resultMessage.tool_call_id);
   const result = JSON.parse(resultMessage.content);
 
-  if (result.error) return `Sorry, ${result.error}`;
+  if (result.error) return { content: `Sorry, ${result.error}`, toolCalls: [] };
 
+  const text = (content) => ({ content, toolCalls: [] });
   switch (call?.function?.name) {
     case 'get_facts':
-      return factsReply(messages, result);
+      return answerFacts(messages, result, toolCall);
     case 'update_lead_profile':
-      return 'Noted, thank you. Shall I show you free site-visit slots?';
+      return text('Noted, thank you. Shall I show you free site-visit slots?');
     case 'get_free_slots':
       if (!result.slots.length)
-        return 'There are no free slots in those days. Shall I check later dates?';
-      return `Free slots: ${result.slots
-        .slice(0, 3)
-        .map((s, i) => `${i + 1}) ${s.when}`)
-        .join(', ')}. Reply with a number to book.`;
+        return text('There are no free slots in those days. Shall I check later dates?');
+      return text(
+        `Free slots: ${result.slots
+          .slice(0, 3)
+          .map((s, i) => `${i + 1}) ${s.when}`)
+          .join(', ')}. Reply with a number to book.`,
+      );
     case 'book_visit':
-      return `Done! Your site visit is booked for ${result.when}. You will get a WhatsApp confirmation.`;
+      return text(
+        `Done! Your site visit is booked for ${result.when}. You will get a WhatsApp confirmation.`,
+      );
     case 'handoff_to_human':
-      return result.executive
-        ? `${result.executive} from our sales team will call you shortly.`
-        : 'Our sales team will call you shortly.';
+      return text(handoffReply(messages, call, result));
     default:
-      return 'How else can I help?';
+      return text('How else can I help?');
   }
 }
 
 function demoResponse(messages, toolCall) {
   const last = messages.at(-1);
-  if (last.role === 'tool') return { content: replyToTool(messages), toolCalls: [] };
+  if (last.role === 'tool') return replyToTool(messages, toolCall);
 
   const text = last.content ?? '';
+  const copy = COPY[languageOf(messages)];
   if (PATTERNS.human.test(text)) {
     return toolCall('handoff_to_human', { reason: 'buyer_requested', summary: { needs: text } });
   }
   if (PATTERNS.discount.test(text)) {
     return toolCall('handoff_to_human', { reason: 'price_or_discount', summary: { needs: text } });
   }
+  if (isSmallTalk(text, PATTERNS.greeting)) return { content: copy.greeting, toolCalls: [] };
+  if (isSmallTalk(text, PATTERNS.thanks)) return { content: copy.thanks, toolCalls: [] };
 
   const pick = text.match(PATTERNS.pick);
   const offered = pick && lastToolResult(messages, 'get_free_slots');
   if (offered?.slots?.[pick[1] - 1]) {
     return toolCall('book_visit', { slotId: offered.slots[pick[1] - 1].slotId });
   }
-  if (PATTERNS.visit.test(text)) return toolCall('get_free_slots', {});
+  if (!PATTERNS.bookingQuestion.test(text) && PATTERNS.visit.test(text)) {
+    return toolCall('get_free_slots', {});
+  }
 
   const bhk = text.match(PATTERNS.bhk);
   const budget = text.match(PATTERNS.budget);
@@ -190,13 +231,8 @@ function demoResponse(messages, toolCall) {
       budgetMax: Math.round(Number(budget[1]) * unit),
     });
   }
-  if (topicOf(text) || PATTERNS.facts.test(text)) return toolCall('get_facts', {});
 
-  const greeted = messages.some((m) => m.role === 'assistant' && m.content);
-  return {
-    content: greeted
-      ? "Sorry, I didn't follow that. I can tell you about prices, sizes, amenities, parking, possession, location and home loans, or book a site visit. You can also tap 'Talk to a person'."
-      : 'Hi! I can share prices, sizes, amenities and possession dates, and book a site visit for you. What are you looking for?',
-    toolCalls: [],
-  };
+  // Every other message is a question for the fact sheet; no match there means a handoff.
+  const project = text.match(PATTERNS.project);
+  return toolCall('get_facts', project ? { projectCode: `P${project[1]}` } : {});
 }

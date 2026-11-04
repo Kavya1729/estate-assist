@@ -60,7 +60,9 @@ describe('agent turn', () => {
     ]);
 
     const [p1] = factsSeen.projects;
-    expect(p1.facts).toEqual([{ label: 'Clubhouse', value: 'Clubhouse with gym and pool' }]);
+    expect(p1.facts).toEqual([
+      { key: 'clubhouse', label: 'Clubhouse', value: 'Clubhouse with gym and pool' },
+    ]);
     expect(p1.configurations.find((c) => c.bhk === 3).priceRange).toBe('₹95 lakh – ₹1.2 crore');
     expect(reply.toolCalls).toEqual([expect.objectContaining({ name: 'get_facts', ok: true })]);
   });

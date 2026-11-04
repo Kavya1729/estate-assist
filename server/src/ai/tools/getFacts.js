@@ -25,14 +25,14 @@ export function describeProject(project) {
       priceRange: formatRupeeRange(c.priceRange),
       unitsAvailable: c.unitsAvailable ?? null,
     })),
-    facts: project.facts.map((f) => ({ label: f.label, value: f.value })),
+    facts: project.facts.map((f) => ({ key: f.key, label: f.label, value: f.value })),
   };
 }
 
 export const getFacts = {
   name: 'get_facts',
   description:
-    "Fetch the sales head's approved fact sheet: prices, sizes, possession, RERA, location, amenities and other facts. The only source you may answer from. Omit projectCode to use the buyer's project, or get both projects if it is not known yet.",
+    "Fetch the sales head's approved fact sheet: prices, sizes, possession, RERA, location and distances, nearby schools and hospitals, amenities, specifications (flooring, bathroom tiles and fittings, kitchen, furniture, doors and windows, electrical, plumbing and gas pipelines, lifts, structure), charges and maintenance, payment plan, home loans, legal approvals, documents and the booking process. The only source you may answer from. Omit projectCode to use the buyer's project, or get both projects if it is not known yet.",
   schema: z
     .object({
       projectCode: z.string().trim().toUpperCase().max(10).optional().describe('e.g. "P1"'),

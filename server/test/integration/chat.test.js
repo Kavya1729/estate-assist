@@ -84,6 +84,18 @@ describe('chatting', () => {
     expect((await Lead.findOne()).status).toBe('visit_booked');
   });
 
+  it('hands a question outside the fact sheet to a sales executive', async () => {
+    await createStaff({ projects: [project._id] });
+    const { body } = await start();
+
+    const res = await send(body.token, 'Who won the cricket match yesterday?');
+
+    expect(res.status).toBe(200);
+    expect(res.body.mode).toBe('human');
+    expect(res.body.reply.text).toMatch(/will connect with you shortly/);
+    expect((await Lead.findOne()).handoff).toMatchObject({ reason: 'missing_fact' });
+  });
+
   it('returns the session history without tool internals', async () => {
     const { body } = await start();
     await send(body.token, 'What is the price?');
