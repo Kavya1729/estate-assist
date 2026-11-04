@@ -62,4 +62,4 @@ executives, and 60 leads, including the brief's sample rows (Hardik Patel `LD-58
 
 Every account uses the password in `SEED_PASSWORD` (default `Demo@12345`).
 
-Setup and deployment steps live in `docs/deployment.md`.
+Setup and deployment steps (Atlas, Render via `render.yaml`, Vercel) live in `docs/deployment.md`.
