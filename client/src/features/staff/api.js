@@ -16,6 +16,7 @@ async function staffApi(path, options = {}) {
 }
 
 const post = (path, body) => staffApi(path, { method: 'POST', body: body ?? {} });
+const patch = (path, body) => staffApi(path, { method: 'PATCH', body });
 
 export const login = (credentials) => api('/auth/login', { method: 'POST', body: credentials });
 
@@ -49,3 +50,21 @@ export const cancelVisit = (visitId) => post(`/visits/${visitId}/cancel`);
 export function fetchDashboard({ from, to }, signal) {
   return staffApi(`/dashboard?${new URLSearchParams({ from, to })}`, { signal });
 }
+
+export const fetchDuplicatePairs = (signal) => staffApi('/leads/duplicates', { signal });
+
+export const fetchReviews = (signal) => staffApi('/reviews', { signal });
+
+export const resolveReview = (conversationId) => post(`/reviews/${conversationId}/resolve`);
+
+export const fetchProjects = (signal) => staffApi('/projects', { signal });
+
+export const updateProject = (code, changes) => patch(`/projects/${code}`, changes);
+
+export function fetchSchedule(code, { from, days }, signal) {
+  return staffApi(`/projects/${code}/schedule?${new URLSearchParams({ from, days })}`, { signal });
+}
+
+export const generateSlots = (code, options) => post(`/projects/${code}/slots`, options);
+
+export const updateSlot = (slotId, changes) => patch(`/slots/${slotId}`, changes);

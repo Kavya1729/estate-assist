@@ -89,6 +89,16 @@ export function DuplicatesCard({ lead, onChanged }) {
       title="Possible duplicates"
       icon={Copy}
       description="Same buyer from another source? Merge them so only one person calls."
+      action={
+        open.length > 0 && (
+          <Link
+            to="/staff/duplicates"
+            className="shrink-0 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          >
+            Compare side by side
+          </Link>
+        )
+      }
     >
       {open.length > 0 && (
         <ul className="divide-y">

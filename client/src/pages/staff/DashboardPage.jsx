@@ -262,12 +262,13 @@ function Dashboard({ data }) {
           label="Chats waiting for a person"
         />
         <QueueLink
-          to="/staff/leads?duplicates=open"
+          to="/staff/duplicates"
           icon={Copy}
           count={queues.openDuplicates}
           label="Possible duplicates to check"
         />
         <QueueLink
+          to="/staff/reviews"
           icon={ShieldAlert}
           count={queues.pendingReviews}
           label="Replies blocked by guardrails"

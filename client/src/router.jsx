@@ -36,6 +36,18 @@ export const router = createBrowserRouter([
             lazy: staffPage(() => import('@/pages/staff/LeadDetailPage'), 'LeadDetailPage'),
           },
           {
+            path: 'reviews',
+            lazy: staffPage(() => import('@/pages/staff/ReviewsPage'), 'ReviewsPage'),
+          },
+          {
+            path: 'duplicates',
+            lazy: staffPage(() => import('@/pages/staff/DuplicatesPage'), 'DuplicatesPage'),
+          },
+          {
+            path: 'projects',
+            lazy: staffPage(() => import('@/pages/staff/ProjectsPage'), 'ProjectsPage'),
+          },
+          {
             path: 'dashboard',
             lazy: staffPage(() => import('@/pages/staff/DashboardPage'), 'DashboardPage'),
           },

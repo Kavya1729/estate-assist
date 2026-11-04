@@ -1,5 +1,6 @@
-import { ChartColumn, LogOut, Users } from 'lucide-react';
-import { Link, NavLink, Outlet } from 'react-router';
+import { useEffect, useRef } from 'react';
+import { Building2, ChartColumn, Copy, LogOut, ShieldAlert, Users } from 'lucide-react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,8 +12,13 @@ const ROLE_LABELS = { sales_head: 'Sales head', sales_executive: 'Sales executiv
 function navItems(user) {
   return [
     { to: '/staff/leads', label: 'Leads', icon: Users },
+    { to: '/staff/reviews', label: 'Review', icon: ShieldAlert },
+    { to: '/staff/duplicates', label: 'Duplicates', icon: Copy },
     ...(isSalesHead(user)
-      ? [{ to: '/staff/dashboard', label: 'Dashboard', icon: ChartColumn }]
+      ? [
+          { to: '/staff/projects', label: 'Projects', icon: Building2 },
+          { to: '/staff/dashboard', label: 'Dashboard', icon: ChartColumn },
+        ]
       : []),
   ];
 }
@@ -23,7 +29,7 @@ function NavItem({ to, label, icon: Icon, compact }) {
       to={to}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-2 rounded-lg text-sm font-medium transition-colors',
+          'flex shrink-0 items-center gap-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
           compact ? 'px-3 py-1.5' : 'px-3 py-2',
           isActive
             ? 'bg-primary text-primary-foreground'
@@ -41,6 +47,19 @@ export function StaffShell() {
   const user = useStaffUser();
   const items = navItems(user);
   const signOut = () => endStaffSession();
+  const { pathname } = useLocation();
+  const tabsRef = useRef(null);
+
+  // On phones the tab row scrolls sideways; keep the current page's tab in view
+  // (again once the web font loads, since it changes the tab widths).
+  useEffect(() => {
+    const reveal = () =>
+      tabsRef.current
+        ?.querySelector('[aria-current="page"]')
+        ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    reveal();
+    document.fonts?.ready.then(reveal);
+  }, [pathname]);
 
   return (
     <div className="min-h-svh md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
@@ -80,7 +99,11 @@ export function StaffShell() {
           </div>
         </div>
         {items.length > 1 && (
-          <nav aria-label="Staff" className="flex gap-1 px-3 pb-2">
+          <nav
+            ref={tabsRef}
+            aria-label="Staff"
+            className="flex gap-1 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {items.map((item) => (
               <NavItem key={item.to} {...item} compact />
             ))}

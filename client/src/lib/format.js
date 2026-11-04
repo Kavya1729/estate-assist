@@ -84,3 +84,7 @@ export const formatPercent = (ratio) => (ratio == null ? '—' : `${Math.round(r
 /** The IST calendar date ("2026-11-05"), for grouping slots by day. */
 export const istDateKey = (date) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: IST_TIME_ZONE }).format(new Date(date));
+
+/** Moves an IST calendar date by whole days: ("2026-11-05", 7) → "2026-11-12". */
+export const shiftDateKey = (key, days) =>
+  istDateKey(new Date(`${key}T12:00:00+05:30`).getTime() + days * 86_400_000);
