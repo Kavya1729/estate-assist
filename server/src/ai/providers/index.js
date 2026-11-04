@@ -8,7 +8,11 @@ let provider;
 export function getLLMProvider() {
   provider ??=
     env.LLM_PROVIDER === 'groq'
-      ? createGroqProvider({ apiKey: env.GROQ_API_KEY, model: env.GROQ_MODEL })
+      ? createGroqProvider({
+          apiKey: env.GROQ_API_KEY,
+          model: env.GROQ_MODEL,
+          fallbackModel: env.GROQ_FALLBACK_MODEL,
+        })
       : createMockProvider();
   return provider;
 }

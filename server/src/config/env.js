@@ -35,6 +35,11 @@ const schema = z
     LLM_PROVIDER: z.enum(['groq', 'mock']).default('mock'),
     GROQ_API_KEY: z.string().optional(),
     GROQ_MODEL: z.string().default('openai/gpt-oss-120b'),
+    // Empty disables the fallback.
+    GROQ_FALLBACK_MODEL: z
+      .string()
+      .default('openai/gpt-oss-20b')
+      .transform((value) => value.trim() || undefined),
     INGEST_API_KEY: z.string().min(24, 'INGEST_API_KEY must be at least 24 characters').optional(),
     SEED_PASSWORD: z.string().min(8, 'SEED_PASSWORD must be at least 8 characters').optional(),
     JOBS_ENABLED: z

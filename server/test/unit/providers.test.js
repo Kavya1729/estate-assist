@@ -65,6 +65,19 @@ describe('Groq provider', () => {
     expect(body.max_completion_tokens).toBeGreaterThan(700);
   });
 
+  it('strips inline 【…】 citations from the reply', async () => {
+    const content =
+      'Yes, Project 1 has a swimming pool【{"key":"amenities","value":"pool"}】 . Want to visit?';
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse(200, { choices: [{ message: { content, tool_calls: [] } }] }),
+    );
+    const provider = createGroqProvider({ apiKey: 'k', model: 'openai/gpt-oss-120b', fetchImpl });
+
+    const result = await provider.complete({ messages, tools });
+
+    expect(result.content).toBe('Yes, Project 1 has a swimming pool. Want to visit?');
+  });
+
   it('sends no reasoning options to other models', async () => {
     const fetchImpl = vi.fn(async () => jsonResponse(200, toolCallBody));
     const provider = createGroqProvider({ apiKey: 'k', model: 'llama-3.1-8b-instant', fetchImpl });
@@ -91,6 +104,32 @@ describe('Groq provider', () => {
       content: 'Hello',
     });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('moves to the fallback model straight away when rate limited', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse(429, { error: { message: 'limit' } }, { 'retry-after': '20' }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, { choices: [{ message: { content: 'Hello', tool_calls: [] } }] }),
+      );
+    const provider = createGroqProvider({
+      apiKey: 'k',
+      model: 'openai/gpt-oss-120b',
+      fallbackModel: 'openai/gpt-oss-20b',
+      fetchImpl,
+    });
+
+    const started = Date.now();
+    await expect(provider.complete({ messages, tools })).resolves.toMatchObject({
+      content: 'Hello',
+    });
+
+    expect(Date.now() - started).toBeLessThan(1000);
+    const models = fetchImpl.mock.calls.map(([, init]) => JSON.parse(init.body).model);
+    expect(models).toEqual(['openai/gpt-oss-120b', 'openai/gpt-oss-20b']);
   });
 
   it('retries once when the model produced a malformed tool call', async () => {

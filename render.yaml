@@ -30,6 +30,8 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: openai/gpt-oss-120b
+      - key: GROQ_FALLBACK_MODEL
+        value: openai/gpt-oss-20b
       - key: INGEST_API_KEY
         generateValue: true
       - key: JOBS_ENABLED

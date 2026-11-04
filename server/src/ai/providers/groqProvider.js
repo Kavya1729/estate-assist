@@ -29,26 +29,49 @@ async function errorFrom(response) {
   });
 }
 
+/** Headroom for GPT-OSS's hidden reasoning at low effort. */
+const REASONING_TOKENS = 400;
+
 /**
  * Reasoning models (GPT-OSS) spend completion tokens on hidden reasoning before
- * the reply, so they get a low effort setting and a larger token budget.
+ * the reply, so they get a low effort setting and some extra budget. Groq counts
+ * max_completion_tokens against the per-minute token limit, so the budget stays tight.
  */
 function generationOptions(model, replyTokens) {
   if (!model.startsWith('openai/gpt-oss')) return { max_completion_tokens: replyTokens };
-  return { reasoning_effort: 'low', max_completion_tokens: replyTokens * 3 };
+  return { reasoning_effort: 'low', max_completion_tokens: replyTokens + REASONING_TOKENS };
+}
+
+/** GPT-OSS sometimes cites tool results inline as 【…】; buyers should never see those. */
+function cleanReply(content) {
+  if (typeof content !== 'string') return null;
+  return content
+    .replace(/【[^】]*】/g, '')
+    .replace(/[ \t]+([.,!?;:])/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
 }
 
 /**
- * Tool-calling chat model on Groq (default GPT-OSS 120B). Retries once on rate limits, server
- * errors and timeouts; anything else surfaces as an LLMError for the agent's
- * fallback to handle.
+ * Tool-calling chat model on Groq (default GPT-OSS 120B). Retries once on rate
+ * limits, server errors and timeouts; anything else surfaces as an LLMError for
+ * the agent's fallback to handle. Groq rate-limits each model separately, so a
+ * rate-limited request moves straight to `fallbackModel` when one is set.
  *
  * @returns {import('./llmProvider.js').LLMProvider}
  */
-export function createGroqProvider({ apiKey, model, timeoutMs = 20_000, fetchImpl = fetch }) {
+export function createGroqProvider({
+  apiKey,
+  model,
+  fallbackModel,
+  timeoutMs = 20_000,
+  fetchImpl = fetch,
+}) {
   if (!apiKey) throw new Error('GROQ_API_KEY is required for the Groq provider');
 
-  async function request(body) {
+  /** @param {(model: string) => object} buildBody */
+  async function request(buildBody) {
+    let current = model;
     let lastError;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
       let response;
@@ -56,7 +79,7 @@ export function createGroqProvider({ apiKey, model, timeoutMs = 20_000, fetchImp
         response = await fetchImpl(GROQ_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify(body),
+          body: JSON.stringify(buildBody(current)),
           signal: AbortSignal.timeout(timeoutMs),
         });
       } catch (err) {
@@ -66,6 +89,10 @@ export function createGroqProvider({ apiKey, model, timeoutMs = 20_000, fetchImp
       if (response?.ok) return response.json();
       if (response) lastError = await errorFrom(response);
       if (!lastError.retryable || attempt === MAX_ATTEMPTS) throw lastError;
+      if (lastError.status === 429 && fallbackModel && current !== fallbackModel) {
+        current = fallbackModel;
+        continue;
+      }
       await sleep(retryDelay(response, attempt));
     }
     throw lastError;
@@ -74,21 +101,21 @@ export function createGroqProvider({ apiKey, model, timeoutMs = 20_000, fetchImp
   return {
     name: 'groq',
     async complete({ messages, tools }) {
-      const data = await request({
-        model,
+      const data = await request((current) => ({
+        model: current,
         messages,
         tools: tools.map((tool) => ({ type: 'function', function: tool })),
         tool_choice: 'auto',
         parallel_tool_calls: false,
         temperature: 0.2,
-        ...generationOptions(model, 700),
-      });
+        ...generationOptions(current, 700),
+      }));
 
       const message = data?.choices?.[0]?.message;
       if (!message) throw new LLMError('Groq returned no message');
 
       return {
-        content: message.content ?? null,
+        content: cleanReply(message.content),
         toolCalls: (message.tool_calls ?? []).map((call) => ({
           id: call.id,
           name: call.function?.name,
@@ -99,13 +126,13 @@ export function createGroqProvider({ apiKey, model, timeoutMs = 20_000, fetchImp
 
     /** JSON mode, used for the handoff summary. Returns the parsed object. */
     async completeJSON({ messages }) {
-      const data = await request({
-        model,
+      const data = await request((current) => ({
+        model: current,
         messages,
         response_format: { type: 'json_object' },
         temperature: 0,
-        ...generationOptions(model, 500),
-      });
+        ...generationOptions(current, 500),
+      }));
       try {
         return JSON.parse(data?.choices?.[0]?.message?.content ?? '');
       } catch {

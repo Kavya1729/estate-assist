@@ -58,6 +58,10 @@ Requirements: Node.js 20.19+ (22 LTS recommended), npm 10+, and MongoDB (local i
 
 1. Create an API key at https://console.groq.com/keys.
 2. Set `LLM_PROVIDER=groq` and `GROQ_API_KEY`. `GROQ_MODEL` defaults to `openai/gpt-oss-120b`, the strongest tool-calling model on the free plan (Llama 3.3 70B is Enterprise-only now).
+   The free plan allows about 8,000 tokens a minute per model, roughly two or three buyer
+   messages. When the main model is rate limited the API moves to `GROQ_FALLBACK_MODEL`
+   (default `openai/gpt-oss-20b`, which has its own limit); if both are busy the buyer is handed
+   to a sales executive. Groq's paid Developer tier removes the limit for real traffic.
 
 ## Deploy
 
@@ -156,7 +160,7 @@ first run downloads the MongoDB binary (about 100 MB) and caches it.
 
 ## Environment variables (names only)
 
-Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN` (comma-separated CORS allowlist, e.g. the Vercel URL), `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`, `INGEST_API_KEY`, `JOBS_ENABLED`, `SEED_PASSWORD`.
+Server (`server/.env`): `NODE_ENV`, `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_ORIGIN` (comma-separated CORS allowlist, e.g. the Vercel URL), `LLM_PROVIDER`, `GROQ_API_KEY`, `GROQ_MODEL`, `GROQ_FALLBACK_MODEL`, `INGEST_API_KEY`, `JOBS_ENABLED`, `SEED_PASSWORD`.
 
 Visit reminders run inside the API process every minute (`JOBS_ENABLED=true`). They are idempotent, so
 running more than one instance is safe. On a free host that sleeps when idle, reminders that came due
