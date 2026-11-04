@@ -78,6 +78,18 @@ describe('Groq provider', () => {
     expect(result.content).toBe('Yes, Project 1 has a swimming pool. Want to visit?');
   });
 
+  it('turns markdown bold and headings into plain text, keeping list dashes', async () => {
+    const content = '### Slots\nBooked for **Project 1** on **Sun, 8 Nov**.\n- 4:00 pm';
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse(200, { choices: [{ message: { content, tool_calls: [] } }] }),
+    );
+    const provider = createGroqProvider({ apiKey: 'k', model: 'openai/gpt-oss-120b', fetchImpl });
+
+    const result = await provider.complete({ messages, tools });
+
+    expect(result.content).toBe('Slots\nBooked for Project 1 on Sun, 8 Nov.\n- 4:00 pm');
+  });
+
   it('sends no reasoning options to other models', async () => {
     const fetchImpl = vi.fn(async () => jsonResponse(200, toolCallBody));
     const provider = createGroqProvider({ apiKey: 'k', model: 'llama-3.1-8b-instant', fetchImpl });

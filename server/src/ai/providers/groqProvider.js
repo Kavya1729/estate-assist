@@ -42,11 +42,16 @@ function generationOptions(model, replyTokens) {
   return { reasoning_effort: 'low', max_completion_tokens: replyTokens + REASONING_TOKENS };
 }
 
-/** GPT-OSS sometimes cites tool results inline as 【…】; buyers should never see those. */
+/**
+ * GPT-OSS sometimes cites tool results inline as 【…】 and adds markdown bold or
+ * headings; the chat shows plain text, so buyers should never see either.
+ */
 function cleanReply(content) {
   if (typeof content !== 'string') return null;
   return content
     .replace(/【[^】]*】/g, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/^#{1,6}[ \t]+/gm, '')
     .replace(/[ \t]+([.,!?;:])/g, '$1')
     .replace(/[ \t]{2,}/g, ' ')
     .trim();

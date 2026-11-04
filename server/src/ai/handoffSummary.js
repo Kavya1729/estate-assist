@@ -14,7 +14,7 @@ const summarySchema = z.object({
 const SUMMARY_PROMPT = `You write handoff notes for a real-estate sales executive who is about to call a buyer.
 Read the chat and return only a JSON object with these keys:
 - "needs": one sentence on what the buyer wants (project, BHK, timing).
-- "budget": the budget the buyer stated, or null if they did not state one.
+- "budget": the budget the buyer stated, written in lakh or crore (e.g. "₹1.1 crore"), or null if they did not state one.
 - "questions": up to 5 questions the buyer asked that still need an answer.
 - "concerns": up to 5 worries or objections the buyer raised.
 Use only what is in the chat. Write in English even if the chat is in Hindi or Gujarati.`;
