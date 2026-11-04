@@ -72,6 +72,7 @@ describe('GET /api/leads', () => {
       name: 'Hardik Patel',
       phone: '98xxxxxx45',
       primarySource: 'portal',
+      sources: ['portal'],
       project: { code: 'P1', name: 'Project 1' },
       profile: { bhk: 3, budgetMax: 110 * LAKH },
       status: 'visit_booked',

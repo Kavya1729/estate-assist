@@ -65,6 +65,10 @@ function listItem(lead, { visit, conversation }) {
     phone: maskPhone(lead.normalizedPhone),
     primarySource: lead.primarySource,
     sourceCount: lead.sources?.length ?? 0,
+    // Distinct channels, first touch first.
+    sources: [lead.primarySource, ...(lead.sources ?? []).map((s) => s.source)].filter(
+      (source, index, all) => source && all.indexOf(source) === index,
+    ),
     project: projectRef(lead.project),
     profile: {
       bhk: lead.profile?.bhk ?? null,
