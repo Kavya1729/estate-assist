@@ -30,7 +30,16 @@ async function errorFrom(response) {
 }
 
 /**
- * Llama 3.3 70B on Groq with tool calling. Retries once on rate limits, server
+ * Reasoning models (GPT-OSS) spend completion tokens on hidden reasoning before
+ * the reply, so they get a low effort setting and a larger token budget.
+ */
+function generationOptions(model, replyTokens) {
+  if (!model.startsWith('openai/gpt-oss')) return { max_completion_tokens: replyTokens };
+  return { reasoning_effort: 'low', max_completion_tokens: replyTokens * 3 };
+}
+
+/**
+ * Tool-calling chat model on Groq (default GPT-OSS 120B). Retries once on rate limits, server
  * errors and timeouts; anything else surfaces as an LLMError for the agent's
  * fallback to handle.
  *
@@ -72,7 +81,7 @@ export function createGroqProvider({ apiKey, model, timeoutMs = 20_000, fetchImp
         tool_choice: 'auto',
         parallel_tool_calls: false,
         temperature: 0.2,
-        max_completion_tokens: 700,
+        ...generationOptions(model, 700),
       });
 
       const message = data?.choices?.[0]?.message;
@@ -95,7 +104,7 @@ export function createGroqProvider({ apiKey, model, timeoutMs = 20_000, fetchImp
         messages,
         response_format: { type: 'json_object' },
         temperature: 0,
-        max_completion_tokens: 500,
+        ...generationOptions(model, 500),
       });
       try {
         return JSON.parse(data?.choices?.[0]?.message?.content ?? '');

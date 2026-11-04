@@ -28,6 +28,8 @@ services:
         value: groq
       - key: GROQ_API_KEY
         sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
       - key: INGEST_API_KEY
         generateValue: true
       - key: JOBS_ENABLED

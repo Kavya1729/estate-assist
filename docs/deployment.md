@@ -57,7 +57,7 @@ Requirements: Node.js 20.19+ (22 LTS recommended), npm 10+, and MongoDB (local i
 ### Groq
 
 1. Create an API key at https://console.groq.com/keys.
-2. Set `LLM_PROVIDER=groq` and `GROQ_API_KEY`. `GROQ_MODEL` defaults to `llama-3.3-70b-versatile`.
+2. Set `LLM_PROVIDER=groq` and `GROQ_API_KEY`. `GROQ_MODEL` defaults to `openai/gpt-oss-120b`, the strongest tool-calling model on the free plan (Llama 3.3 70B is Enterprise-only now).
 
 ## Deploy
 

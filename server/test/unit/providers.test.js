@@ -54,6 +54,28 @@ describe('Groq provider', () => {
     expect(body.tools[0]).toEqual({ type: 'function', function: tools[0] });
   });
 
+  it('asks GPT-OSS for low reasoning effort with room for its reasoning tokens', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(200, toolCallBody));
+    const provider = createGroqProvider({ apiKey: 'k', model: 'openai/gpt-oss-120b', fetchImpl });
+
+    await provider.complete({ messages, tools });
+
+    const body = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(body.reasoning_effort).toBe('low');
+    expect(body.max_completion_tokens).toBeGreaterThan(700);
+  });
+
+  it('sends no reasoning options to other models', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(200, toolCallBody));
+    const provider = createGroqProvider({ apiKey: 'k', model: 'llama-3.1-8b-instant', fetchImpl });
+
+    await provider.complete({ messages, tools });
+
+    const body = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(body).not.toHaveProperty('reasoning_effort');
+    expect(body.max_completion_tokens).toBe(700);
+  });
+
   it('retries once on a rate limit', async () => {
     const fetchImpl = vi
       .fn()

@@ -34,7 +34,7 @@ const schema = z
       }),
     LLM_PROVIDER: z.enum(['groq', 'mock']).default('mock'),
     GROQ_API_KEY: z.string().optional(),
-    GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+    GROQ_MODEL: z.string().default('openai/gpt-oss-120b'),
     INGEST_API_KEY: z.string().min(24, 'INGEST_API_KEY must be at least 24 characters').optional(),
     SEED_PASSWORD: z.string().min(8, 'SEED_PASSWORD must be at least 8 characters').optional(),
     JOBS_ENABLED: z
