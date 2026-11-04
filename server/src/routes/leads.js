@@ -5,7 +5,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { requireIngestAccess } from '../middleware/ingestAuth.js';
 import { validate } from '../middleware/validate.js';
 import { assignLead, resolveDuplicate, updateLead } from '../services/leadAdminService.js';
-import { getLeadDetail, listLeads } from '../services/leadQueryService.js';
+import { getLeadDetail, listDuplicatePairs, listLeads } from '../services/leadQueryService.js';
 import { ingestLead } from '../services/leadService.js';
 import { handBack, sendStaffMessage, takeOver } from '../services/staffChatService.js';
 import { chatMessageSchema } from '../validators/chat.js';
@@ -51,6 +51,10 @@ router.use(requireAuth);
 
 router.get('/', validate({ query: listLeadsQuerySchema }), async (req, res) => {
   res.json(await listLeads(req.user, req.valid.query));
+});
+
+router.get('/duplicates', async (req, res) => {
+  res.json({ items: await listDuplicatePairs(req.user) });
 });
 
 router.get('/:id', validate({ params: idParamsSchema }), async (req, res) => {

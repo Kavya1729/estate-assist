@@ -226,6 +226,94 @@ describe('POST /api/leads/:id/assign', () => {
   });
 });
 
+describe('GET /api/leads/duplicates', () => {
+  async function pair({ originalOwner = ravi, duplicateOwner = ravi } = {}) {
+    const original = await createLead(project, {
+      name: 'Kavita Joshi',
+      primarySource: 'hoarding_call',
+      assignedTo: originalOwner._id,
+    });
+    const duplicate = await createLead(project, {
+      name: 'Kavitha Joshi',
+      email: 'kavita@example.com',
+      primarySource: 'social_ad',
+      profile: { bhk: 2, budgetMax: 80 * LAKH },
+      assignedTo: duplicateOwner._id,
+      possibleDuplicates: [{ lead: original._id, reason: 'similar_name' }],
+    });
+    return { original, duplicate };
+  }
+
+  it('lists each open flag as a side-by-side pair, the flagged lead first', async () => {
+    const { original, duplicate } = await pair();
+
+    const res = await get(ravi, '/api/leads/duplicates');
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    const [item] = res.body.items;
+    expect(item).toMatchObject({ reason: 'similar_name', mergeBlockedBy: null });
+    expect(item.lead).toMatchObject({
+      id: duplicate.id,
+      name: 'Kavitha Joshi',
+      email: 'kavita@example.com',
+      phone: duplicate.phone,
+      primarySource: 'social_ad',
+      profile: { bhk: 2, budgetMax: 80 * LAKH },
+      assignedTo: { name: 'Ravi Mehta' },
+      project: { code: 'P1' },
+      upcomingVisit: null,
+    });
+    expect(item.other).toMatchObject({ id: original.id, primarySource: 'hoarding_call' });
+  });
+
+  it('leaves out resolved flags and leads merged away', async () => {
+    const { original, duplicate } = await pair();
+    await pair();
+    await post(ravi, `/api/leads/${duplicate.id}/duplicates/${original.id}`, {
+      resolution: 'ignored',
+    });
+
+    expect((await get(ravi, '/api/leads/duplicates')).body.items).toHaveLength(1);
+  });
+
+  it('shows an executive only their own leads and masks a colleague’s phone', async () => {
+    const { original } = await pair({ originalOwner: amit });
+
+    const asRavi = (await get(ravi, '/api/leads/duplicates')).body.items;
+    expect(asRavi).toHaveLength(1);
+    expect(asRavi[0].mergeBlockedBy).toBe('other_owner');
+    expect(asRavi[0].other.phone).toMatch(/^\d{2}x{6}\d{2}$/);
+
+    expect((await get(amit, '/api/leads/duplicates')).body.items).toHaveLength(0);
+
+    const asHead = (await get(head, '/api/leads/duplicates')).body.items;
+    expect(asHead[0]).toMatchObject({ mergeBlockedBy: null, other: { phone: original.phone } });
+  });
+
+  it('says up front when both leads have a visit booked', async () => {
+    const { original, duplicate } = await pair();
+    await bookVisit({
+      leadId: original._id,
+      slotId: (await createSlot(project))._id,
+      bookedVia: 'staff',
+    });
+    await bookVisit({
+      leadId: duplicate._id,
+      slotId: (await createSlot(project, { startsAt: new Date(Date.now() + 96 * 3_600_000) }))._id,
+      bookedVia: 'staff',
+    });
+
+    const [item] = (await get(ravi, '/api/leads/duplicates')).body.items;
+    expect(item.mergeBlockedBy).toBe('both_have_visits');
+    expect(item.lead.upcomingVisit).not.toBeNull();
+  });
+
+  it('requires a staff session', async () => {
+    expect((await request(app).get('/api/leads/duplicates')).status).toBe(401);
+  });
+});
+
 describe('POST /api/leads/:id/duplicates/:otherId', () => {
   async function flaggedPair() {
     const original = await createLead(project, {

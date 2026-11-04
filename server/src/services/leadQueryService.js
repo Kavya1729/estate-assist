@@ -139,6 +139,72 @@ export async function listLeads(user, { page = 1, limit = 20, sort = 'recent', .
   };
 }
 
+const MAX_DUPLICATE_PAIRS = 50;
+
+const canManage = (user, lead) => canManageLead(user, { assignedTo: lead.assignedTo?._id });
+
+function compareSide(user, lead, upcomingVisit) {
+  const item = listItem(lead, { visit: upcomingVisit });
+  return {
+    ...item,
+    // The full number helps decide; a colleague's lead stays masked, as in the list.
+    phone: canManage(user, lead) ? (lead.phone ?? null) : item.phone,
+    email: lead.email ?? null,
+    language: lead.language,
+  };
+}
+
+function mergeBlocker(user, lead, other, visitBy) {
+  if (!canManage(user, other)) return 'other_owner';
+  if (visitBy.has(String(lead._id)) && visitBy.has(String(other._id))) return 'both_have_visits';
+  return null;
+}
+
+/**
+ * Open possible-duplicate flags as side-by-side pairs, newest first. The flagged
+ * lead is the one a merge keeps; `mergeBlockedBy` says why a merge would be refused.
+ */
+export async function listDuplicatePairs(user) {
+  const leads = await Lead.find({
+    ...leadScope(user),
+    mergedInto: { $exists: false },
+    'possibleDuplicates.resolution': 'open',
+  })
+    .sort({ createdAt: -1 })
+    .limit(MAX_DUPLICATE_PAIRS)
+    .populate('assignedTo', 'name')
+    .populate('project', 'code name')
+    .populate({
+      path: 'possibleDuplicates.lead',
+      populate: [
+        { path: 'assignedTo', select: 'name' },
+        { path: 'project', select: 'code name' },
+      ],
+    })
+    .lean();
+
+  const pairs = leads.flatMap((lead) =>
+    lead.possibleDuplicates
+      .filter((flag) => flag.resolution === 'open' && flag.lead && !flag.lead.mergedInto)
+      .map((flag) => ({ lead, flag, other: flag.lead })),
+  );
+
+  const ids = pairs.flatMap(({ lead, other }) => [lead._id, other._id]);
+  const visits = await Visit.find({ lead: { $in: ids }, status: 'booked' })
+    .select('lead startsAt')
+    .lean();
+  const visitBy = new Map(visits.map((v) => [String(v.lead), v]));
+
+  return pairs.slice(0, MAX_DUPLICATE_PAIRS).map(({ lead, flag, other }) => ({
+    id: `${lead._id}:${other._id}`,
+    reason: flag.reason,
+    flaggedAt: flag.flaggedAt,
+    lead: compareSide(user, lead, visitBy.get(String(lead._id))),
+    other: compareSide(user, other, visitBy.get(String(other._id))),
+    mergeBlockedBy: mergeBlocker(user, lead, other, visitBy),
+  }));
+}
+
 /** Everything the lead detail screen shows: profile, chat with tool calls, visits, messages sent. */
 export async function getLeadDetail(user, leadId) {
   const lead = await Lead.findById(leadId)
