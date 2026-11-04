@@ -36,8 +36,8 @@ export default [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // Core no-unused-vars cannot see JSX usage of imported components.
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^[A-Z_]' }],
+      // Core no-unused-vars cannot see JSX usage of components (imported or passed as props).
+      'no-unused-vars': ['error', { argsIgnorePattern: '^[A-Z_]', varsIgnorePattern: '^[A-Z_]' }],
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },

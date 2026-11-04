@@ -49,6 +49,38 @@ export const formatTime = (date, language) =>
 export const formatMonthYear = (date, language) =>
   format(date, language, { month: 'long', year: 'numeric' });
 
+/** "5 Nov, 11:00 am" */
+export const formatDateTime = (date, language) =>
+  format(date, language, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+const RELATIVE_STEPS = [
+  ['day', 86_400],
+  ['hour', 3_600],
+  ['minute', 60],
+];
+
+/** "5 minutes ago", "in 2 days"; `now` is passed in so renders stay pure. */
+export function formatRelative(date, now, language) {
+  const seconds = (new Date(date).getTime() - now) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(localeOf(language), { numeric: 'auto' });
+  for (const [unit, size] of RELATIVE_STEPS) {
+    if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
+  }
+  return rtf.format(0, 'minute');
+}
+
+/** 24 → "24 s", 270 → "4.5 min", 3240 → "54 min", 9000 → "2.5 h" */
+export function formatDuration(seconds) {
+  if (seconds == null) return '—';
+  if (seconds < 60) return `${Math.round(seconds)} s`;
+  if (seconds < 3_600) return `${trim(Math.round((seconds / 60) * 10) / 10)} min`;
+  if (seconds < 86_400) return `${trim(Math.round((seconds / 3_600) * 10) / 10)} h`;
+  return `${trim(Math.round((seconds / 86_400) * 10) / 10)} d`;
+}
+
+/** 0.833 → "83%" */
+export const formatPercent = (ratio) => (ratio == null ? '—' : `${Math.round(ratio * 100)}%`);
+
 /** The IST calendar date ("2026-11-05"), for grouping slots by day. */
 export const istDateKey = (date) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: IST_TIME_ZONE }).format(new Date(date));
